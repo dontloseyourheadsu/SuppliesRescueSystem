@@ -1,11 +1,10 @@
 package com.udlap.suppliesrescuesystem.ui.donor
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -13,12 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,15 +26,12 @@ fun PublishBatchScreen(
     var title by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
     var pickupWindow by remember { mutableStateOf("") }
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var donorName by remember { mutableStateOf("") }
+    var donorAddress by remember { mutableStateOf("") }
+    var recipientName by remember { mutableStateOf("") }
+    var recipientAddress by remember { mutableStateOf("") }
     
     val publishState by viewModel.publishState.collectAsState()
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        imageUri = uri
-    }
 
     LaunchedEffect(publishState) {
         if (publishState is PublishState.Success) {
@@ -64,7 +58,8 @@ fun PublishBatchScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Card(
@@ -76,6 +71,7 @@ fun PublishBatchScreen(
                 elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    Text("FOOD INFO", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     TextField(
                         value = title,
                         onValueChange = { title = it },
@@ -83,9 +79,6 @@ fun PublishBatchScreen(
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
                     TextField(
                         value = quantity,
                         onValueChange = { quantity = it },
@@ -93,42 +86,45 @@ fun PublishBatchScreen(
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
                     TextField(
                         value = pickupWindow,
                         onValueChange = { pickupWindow = it },
-                        label = { Text("Pickup Window (e.g., Today 8:00 - 10:00 PM)") },
+                        label = { Text("Pickup Window (e.g., 8:00 - 10:00 PM)") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Photo picker
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .border(1.dp, Color.Black, RoundedCornerShape(8.dp)),
-                shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
-                onClick = { launcher.launch("image/*") }
-            ) {
-                if (imageUri != null) {
-                    AsyncImage(
-                        model = imageUri,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("LOCATIONS", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    TextField(
+                        value = donorName,
+                        onValueChange = { donorName = it },
+                        label = { Text("Donor Name (e.g., Baker's Shop)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
-                } else {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("TAP TO ADD PHOTO (OPTIONAL)", color = Color.Gray, fontWeight = FontWeight.Bold)
-                    }
+                    TextField(
+                        value = donorAddress,
+                        onValueChange = { donorAddress = it },
+                        label = { Text("Donor Address") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = recipientName,
+                        onValueChange = { recipientName = it },
+                        label = { Text("Recipient Name (e.g., Hope Shelter)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
+                    )
+                    TextField(
+                        value = recipientAddress,
+                        onValueChange = { recipientAddress = it },
+                        label = { Text("Recipient Address") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
+                    )
                 }
             }
 
@@ -143,13 +139,19 @@ fun PublishBatchScreen(
             }
 
             Button(
-                onClick = { viewModel.publishBatch(title, quantity, pickupWindow, imageUri) },
+                onClick = { 
+                    viewModel.publishBatchExtended(
+                        title, quantity, pickupWindow, 
+                        donorName, donorAddress, 
+                        recipientName, recipientAddress
+                    ) 
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                enabled = publishState !is PublishState.Loading && title.isNotBlank()
+                enabled = publishState !is PublishState.Loading && title.isNotBlank() && donorAddress.isNotBlank() && recipientAddress.isNotBlank()
             ) {
                 if (publishState is PublishState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))

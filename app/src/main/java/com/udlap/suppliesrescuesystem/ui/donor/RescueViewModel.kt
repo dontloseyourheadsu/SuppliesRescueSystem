@@ -1,6 +1,5 @@
 package com.udlap.suppliesrescuesystem.ui.donor
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
@@ -47,18 +46,35 @@ class RescueViewModel @Inject constructor(
         }
     }
 
-    fun publishBatch(title: String, quantity: String, pickupWindow: String, imageUri: Uri?) {
+    fun publishBatch(title: String, quantity: String, pickupWindow: String) {
+        publishBatchExtended(title, quantity, pickupWindow, "", "", "", "")
+    }
+
+    fun publishBatchExtended(
+        title: String,
+        quantity: String,
+        pickupWindow: String,
+        donorName: String,
+        donorAddress: String,
+        recipientName: String,
+        recipientAddress: String
+    ) {
         val user = authRepository.getCurrentUser() ?: return
         
         viewModelScope.launch {
             _publishState.value = PublishState.Loading
             val batch = RescueBatch(
                 donorId = user.uid,
+                donorName = donorName,
+                donorAddress = donorAddress,
+                recipientName = recipientName,
+                recipientAddress = recipientAddress,
                 title = title,
                 quantity = quantity,
-                pickupWindow = pickupWindow
+                pickupWindow = pickupWindow,
+                expiresAt = System.currentTimeMillis() + (4 * 60 * 60 * 1000) // 4 hours default for MVP
             )
-            val result = repository.publishBatch(batch, imageUri)
+            val result = repository.publishBatch(batch)
             result.onSuccess {
                 _publishState.value = PublishState.Success
             }.onFailure {
