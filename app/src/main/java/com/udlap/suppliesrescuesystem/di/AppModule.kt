@@ -2,8 +2,11 @@ package com.udlap.suppliesrescuesystem.di
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import com.udlap.suppliesrescuesystem.data.repository.AuthRepositoryImpl
+import com.udlap.suppliesrescuesystem.data.repository.RescueRepositoryImpl
 import com.udlap.suppliesrescuesystem.domain.repository.AuthRepository
+import com.udlap.suppliesrescuesystem.domain.repository.RescueRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,8 +27,19 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideFirebaseStorage(): FirebaseStorage = FirebaseStorage.getInstance()
+
+    @Provides
+    @Singleton
     fun provideAuthRepository(
         auth: FirebaseAuth,
         firestore: FirebaseFirestore
     ): AuthRepository = AuthRepositoryImpl(auth, firestore)
+
+    @Provides
+    @Singleton
+    fun provideRescueRepository(
+        firestore: FirebaseFirestore,
+        storage: FirebaseStorage
+    ): RescueRepository = RescueRepositoryImpl(firestore, storage)
 }
