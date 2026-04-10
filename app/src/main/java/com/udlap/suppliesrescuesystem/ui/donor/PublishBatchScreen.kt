@@ -1,12 +1,14 @@
 package com.udlap.suppliesrescuesystem.ui.donor
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,10 +30,15 @@ fun PublishBatchScreen(
     var pickupWindow by remember { mutableStateOf("") }
     var donorName by remember { mutableStateOf("") }
     var donorAddress by remember { mutableStateOf("") }
-    var recipientName by remember { mutableStateOf("") }
+    
+    var selectedRecipientId by remember { mutableStateOf("") }
+    var selectedRecipientName by remember { mutableStateOf("Select Recipient") }
     var recipientAddress by remember { mutableStateOf("") }
     
+    var expanded by remember { mutableStateOf(false) }
+    
     val publishState by viewModel.publishState.collectAsState()
+    val recipients by viewModel.recipients.collectAsState()
 
     LaunchedEffect(publishState) {
         if (publishState is PublishState.Success) {
@@ -95,29 +102,61 @@ fun PublishBatchScreen(
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
-                    Text("LOCATIONS", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("MY INFO (DONOR)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     TextField(
                         value = donorName,
                         onValueChange = { donorName = it },
-                        label = { Text("Donor Name (e.g., Baker's Shop)") },
+                        label = { Text("Organization Name") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
                     TextField(
                         value = donorAddress,
                         onValueChange = { donorAddress = it },
-                        label = { Text("Donor Address") },
+                        label = { Text("Organization Address") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextField(
-                        value = recipientName,
-                        onValueChange = { recipientName = it },
-                        label = { Text("Recipient Name (e.g., Hope Shelter)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
-                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("RECIPIENT INFO", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { expanded = true }
+                                .padding(vertical = 8.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(selectedRecipientName, modifier = Modifier.weight(1f))
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.fillMaxWidth(0.8f)
+                        ) {
+                            recipients.forEach { recipient ->
+                                DropdownMenuItem(
+                                    text = { Text(recipient.name) },
+                                    onClick = {
+                                        selectedRecipientId = recipient.uid
+                                        selectedRecipientName = recipient.name
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
                     TextField(
                         value = recipientAddress,
                         onValueChange = { recipientAddress = it },
@@ -143,7 +182,7 @@ fun PublishBatchScreen(
                     viewModel.publishBatchExtended(
                         title, quantity, pickupWindow, 
                         donorName, donorAddress, 
-                        recipientName, recipientAddress
+                        selectedRecipientId, selectedRecipientName, recipientAddress
                     ) 
                 },
                 modifier = Modifier
@@ -151,7 +190,7 @@ fun PublishBatchScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                enabled = publishState !is PublishState.Loading && title.isNotBlank() && donorAddress.isNotBlank() && recipientAddress.isNotBlank()
+                enabled = publishState !is PublishState.Loading && title.isNotBlank() && selectedRecipientId.isNotBlank()
             ) {
                 if (publishState is PublishState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
