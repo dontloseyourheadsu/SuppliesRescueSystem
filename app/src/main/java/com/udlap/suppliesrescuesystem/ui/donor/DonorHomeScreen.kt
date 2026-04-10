@@ -12,12 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
 import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
 
 @Composable
@@ -82,77 +80,63 @@ fun BatchItem(batch: RescueBatch) {
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .padding(12.dp)
-                .height(IntrinsicSize.Min)
+                .padding(16.dp)
+                .fillMaxWidth()
         ) {
-            if (batch.imageUrl != null) {
-                AsyncImage(
-                    model = batch.imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .border(1.dp, Color.LightGray, RoundedCornerShape(4.dp)),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = batch.title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Color.Black
+            )
+            Text(
+                text = "Qty: ${batch.quantity}",
+                fontSize = 14.sp,
+                color = Color.DarkGray
+            )
+            Text(
+                text = "Window: ${batch.pickupWindow}",
+                fontSize = 14.sp,
+                color = Color.DarkGray
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            val statusLabel = when (batch.status) {
+                "AVAILABLE" -> "Pendiente"
+                "CLAIMED" -> "Asignado a voluntario"
+                "DELIVERED" -> "Completado"
+                else -> batch.status
+            }
+
+            val statusColor = when (batch.status) {
+                "AVAILABLE" -> Color(0xFFFB8C00)
+                "CLAIMED" -> Color(0xFF1976D2)
+                "DELIVERED" -> Color(0xFF4CAF50)
+                else -> Color.Gray
+            }
+
+            val statusBg = when (batch.status) {
+                "AVAILABLE" -> Color(0xFFFFF3E0)
+                "CLAIMED" -> Color(0xFFE3F2FD)
+                "DELIVERED" -> Color(0xFFE8F5E9)
+                else -> Color(0xFFF5F5F5)
             }
             
-            Column(modifier = Modifier.weight(1f)) {
+            Surface(
+                color = statusBg,
+                shape = RoundedCornerShape(4.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, statusColor)
+            ) {
                 Text(
-                    text = batch.title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color.Black
+                    text = statusLabel.uppercase(),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = statusColor
                 )
-                Text(
-                    text = "Qty: ${batch.quantity}",
-                    fontSize = 14.sp,
-                    color = Color.DarkGray
-                )
-                Text(
-                    text = "Window: ${batch.pickupWindow}",
-                    fontSize = 14.sp,
-                    color = Color.DarkGray
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                val statusLabel = when (batch.status) {
-                    "AVAILABLE" -> "Pendiente"
-                    "CLAIMED" -> "Asignado a voluntario"
-                    "DELIVERED" -> "Completado"
-                    else -> batch.status
-                }
-
-                val statusColor = when (batch.status) {
-                    "AVAILABLE" -> Color(0xFFFB8C00) // Orange
-                    "CLAIMED" -> Color(0xFF1976D2) // Blue
-                    "DELIVERED" -> Color(0xFF4CAF50) // Green
-                    else -> Color.Gray
-                }
-
-                val statusBg = when (batch.status) {
-                    "AVAILABLE" -> Color(0xFFFFF3E0)
-                    "CLAIMED" -> Color(0xFFE3F2FD)
-                    "DELIVERED" -> Color(0xFFE8F5E9)
-                    else -> Color(0xFFF5F5F5)
-                }
-                
-                Surface(
-                    color = statusBg,
-                    shape = RoundedCornerShape(4.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, statusColor)
-                ) {
-                    Text(
-                        text = statusLabel.uppercase(),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = statusColor
-                    )
-                }
             }
         }
     }

@@ -8,12 +8,14 @@ import com.udlap.suppliesrescuesystem.ui.auth.LoginScreen
 import com.udlap.suppliesrescuesystem.ui.auth.RegisterScreen
 import com.udlap.suppliesrescuesystem.ui.donor.DonorHomeScreen
 import com.udlap.suppliesrescuesystem.ui.donor.PublishBatchScreen
+import com.udlap.suppliesrescuesystem.ui.volunteer.VolunteerHomeScreen
 import androidx.compose.material3.Text
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
     object DonorHome : Screen("donor_home")
+    object VolunteerHome : Screen("volunteer_home")
     object PublishBatch : Screen("publish_batch")
     object HomePlaceholder : Screen("home_placeholder/{role}") {
         fun createRoute(role: String) = "home_placeholder/$role"
@@ -60,6 +62,11 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        // Volunteer Flow
+        composable(Screen.VolunteerHome.route) {
+            VolunteerHomeScreen()
+        }
+
         composable(Screen.HomePlaceholder.route) { backStackEntry ->
             val role = backStackEntry.arguments?.getString("role") ?: ""
             Text(text = "Welcome $role! (Home Screen Placeholder)")
@@ -70,6 +77,7 @@ fun NavGraph(navController: NavHostController) {
 private fun navigateByRole(navController: NavHostController, role: String) {
     val destination = when (role) {
         "DONOR" -> Screen.DonorHome.route
+        "VOLUNTEER" -> Screen.VolunteerHome.route
         else -> Screen.HomePlaceholder.createRoute(role)
     }
     navController.navigate(destination) {
