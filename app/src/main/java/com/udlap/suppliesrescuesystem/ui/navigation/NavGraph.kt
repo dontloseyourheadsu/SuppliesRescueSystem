@@ -6,13 +6,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.udlap.suppliesrescuesystem.ui.auth.LoginScreen
 import com.udlap.suppliesrescuesystem.ui.auth.RegisterScreen
+import com.udlap.suppliesrescuesystem.ui.donor.DonorHomeScreen
+import com.udlap.suppliesrescuesystem.ui.donor.PublishBatchScreen
 import androidx.compose.material3.Text
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
-    object Home : Screen("home/{role}") {
-        fun createRoute(role: String) = "home/$role"
+    object DonorHome : Screen("donor_home")
+    object PublishBatch : Screen("publish_batch")
+    object HomePlaceholder : Screen("home_placeholder/{role}") {
+        fun createRoute(role: String) = "home_placeholder/$role"
     }
 }
 
@@ -22,9 +26,7 @@ fun NavGraph(navController: NavHostController) {
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = { role ->
-                    navController.navigate(Screen.Home.createRoute(role)) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                    }
+                    navigateByRole(navController, role)
                 },
                 onNavigateToRegister = {
                     navController.navigate(Screen.Register.route)
@@ -34,18 +36,43 @@ fun NavGraph(navController: NavHostController) {
         composable(Screen.Register.route) {
             RegisterScreen(
                 onRegisterSuccess = { role ->
-                    navController.navigate(Screen.Home.createRoute(role)) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                    }
+                    navigateByRole(navController, role)
                 },
                 onNavigateToLogin = {
                     navController.navigate(Screen.Login.route)
                 }
             )
         }
-        composable(Screen.Home.route) { backStackEntry ->
+        
+        // Donor Flow
+        composable(Screen.DonorHome.route) {
+            DonorHomeScreen(
+                onNavigateToPublish = {
+                    navController.navigate(Screen.PublishBatch.route)
+                }
+            )
+        }
+        composable(Screen.PublishBatch.route) {
+            PublishBatchScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.HomePlaceholder.route) { backStackEntry ->
             val role = backStackEntry.arguments?.getString("role") ?: ""
             Text(text = "Welcome $role! (Home Screen Placeholder)")
         }
+    }
+}
+
+private fun navigateByRole(navController: NavHostController, role: String) {
+    val destination = when (role) {
+        "DONOR" -> Screen.DonorHome.route
+        else -> Screen.HomePlaceholder.createRoute(role)
+    }
+    navController.navigate(destination) {
+        popUpTo(Screen.Login.route) { inclusive = true }
     }
 }
