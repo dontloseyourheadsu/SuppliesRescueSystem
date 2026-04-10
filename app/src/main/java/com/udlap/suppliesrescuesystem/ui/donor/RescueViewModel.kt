@@ -31,8 +31,19 @@ class RescueViewModel @Inject constructor(
     private val _myBatches = MutableStateFlow<List<RescueBatch>>(emptyList())
     val myBatches: StateFlow<List<RescueBatch>> = _myBatches.asStateFlow()
 
+    private val _recipients = MutableStateFlow<List<com.udlap.suppliesrescuesystem.domain.model.User>>(emptyList())
+    val recipients: StateFlow<List<com.udlap.suppliesrescuesystem.domain.model.User>> = _recipients.asStateFlow()
+
     init {
         loadMyBatches()
+        loadRecipients()
+    }
+
+    private fun loadRecipients() {
+        viewModelScope.launch {
+            val result = authRepository.getRecipients()
+            result.onSuccess { _recipients.value = it }
+        }
     }
 
     private fun loadMyBatches() {
@@ -47,7 +58,7 @@ class RescueViewModel @Inject constructor(
     }
 
     fun publishBatch(title: String, quantity: String, pickupWindow: String) {
-        publishBatchExtended(title, quantity, pickupWindow, "", "", "", "")
+        publishBatchExtended(title, quantity, pickupWindow, "", "", "", "", "")
     }
 
     fun publishBatchExtended(
@@ -56,6 +67,7 @@ class RescueViewModel @Inject constructor(
         pickupWindow: String,
         donorName: String,
         donorAddress: String,
+        recipientId: String,
         recipientName: String,
         recipientAddress: String
     ) {
@@ -67,12 +79,13 @@ class RescueViewModel @Inject constructor(
                 donorId = user.uid,
                 donorName = donorName,
                 donorAddress = donorAddress,
+                recipientId = recipientId,
                 recipientName = recipientName,
                 recipientAddress = recipientAddress,
                 title = title,
                 quantity = quantity,
                 pickupWindow = pickupWindow,
-                expiresAt = System.currentTimeMillis() + (4 * 60 * 60 * 1000) // 4 hours default for MVP
+                expiresAt = System.currentTimeMillis() + (4 * 60 * 60 * 1000)
             )
             val result = repository.publishBatch(batch)
             result.onSuccess {
