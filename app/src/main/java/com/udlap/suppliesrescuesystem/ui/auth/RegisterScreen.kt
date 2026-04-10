@@ -22,6 +22,7 @@ fun RegisterScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
     var role by remember { mutableStateOf("VOLUNTEER") }
     val authState by viewModel.authState.collectAsState()
 
@@ -63,6 +64,22 @@ fun RegisterScreen(
                 elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    TextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Full Name / Org Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Black,
+                            unfocusedIndicatorColor = Color.LightGray
+                        ),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     TextField(
                         value = email,
                         onValueChange = { email = it },
@@ -128,7 +145,7 @@ fun RegisterScreen(
             }
 
             Button(
-                onClick = { viewModel.register(email, password, role) },
+                onClick = { viewModel.register(email, password, role, name) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -137,7 +154,7 @@ fun RegisterScreen(
                     containerColor = Color(0xFF4CAF50),
                     contentColor = Color.White
                 ),
-                enabled = authState !is AuthState.Loading
+                enabled = authState !is AuthState.Loading && name.isNotBlank() && email.isNotBlank()
             ) {
                 if (authState is AuthState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
