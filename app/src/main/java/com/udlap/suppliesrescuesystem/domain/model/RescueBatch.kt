@@ -5,10 +5,15 @@ import java.util.UUID
 data class RescueBatch(
     val id: String = UUID.randomUUID().toString(),
     val donorId: String = "",
+    val donorName: String = "",
+    val donorAddress: String = "",
+    val recipientName: String = "",
+    val recipientAddress: String = "",
     val title: String = "",
     val quantity: String = "",
-    val pickupWindow: String = "", // e.g., "8:00 PM - 10:00 PM"
-    val imageUrl: String? = null,
+    val pickupWindow: String = "",
+    val expiresAt: Long = 0, // Timestamp for automatic filtering
     val status: String = "AVAILABLE", // AVAILABLE, CLAIMED, DELIVERED
+    val volunteerId: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
