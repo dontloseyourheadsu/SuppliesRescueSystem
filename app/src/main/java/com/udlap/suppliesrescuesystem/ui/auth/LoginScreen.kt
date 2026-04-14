@@ -14,6 +14,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 
+/**
+ * Screen responsible for user authentication.
+ *
+ * Provides a "Bento Box" style interface for entering email and password.
+ * It handles the login flow using [AuthViewModel] and notifies the caller on success.
+ *
+ * @param onLoginSuccess Callback triggered when the user successfully logs in, providing their role.
+ * @param onNavigateToRegister Callback to navigate to the registration screen.
+ * @param viewModel The [AuthViewModel] instance for managing authentication state.
+ */
 @Composable
 fun LoginScreen(
     onLoginSuccess: (String) -> Unit,

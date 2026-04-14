@@ -14,6 +14,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 
+/**
+ * Screen that allows new users to create an account.
+ *
+ * Captures user details including name, email, password, and role selection.
+ * Adheres to the "Bento Box" design system for input fields.
+ *
+ * @param onRegisterSuccess Callback triggered upon successful registration, providing the user's role.
+ * @param onNavigateToLogin Callback to navigate back to the login screen.
+ * @param viewModel The [AuthViewModel] instance for managing registration state.
+ */
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: (String) -> Unit,
