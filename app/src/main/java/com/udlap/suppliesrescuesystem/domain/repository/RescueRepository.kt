@@ -72,4 +72,12 @@ interface RescueRepository {
      * @return Result indicating success or failure of the confirmation operation.
      */
     suspend fun confirmReception(batchId: String): Result<Unit>
+
+    /**
+     * Deletes a rescue batch from the system.
+     *
+     * @param batchId Unique identifier of the rescue batch.
+     * @return Result indicating success or failure of the deletion operation.
+     */
+    suspend fun deleteBatch(batchId: String): Result<Unit>
 }

@@ -12,28 +12,47 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/**
+ * Dependency Injection module using Hilt.
+ *
+ * This module provides singleton instances of Firebase services and repository implementations
+ * to be injected into ViewModels and UseCases across the application.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    /**
+     * Provides the singleton instance of [FirebaseAuth].
+     */
     @Provides
     @Singleton
     fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
 
+    /**
+     * Provides the singleton instance of [FirebaseFirestore].
+     */
     @Provides
     @Singleton
     fun provideFirebaseFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
 
+    /**
+     * Binds the [AuthRepository] interface to its implementation [AuthRepositoryImpl].
+     */
     @Provides
     @Singleton
     fun provideAuthRepository(
-        auth: FirebaseAuth,
+        firebaseAuth: FirebaseAuth,
         firestore: FirebaseFirestore
-    ): AuthRepository = AuthRepositoryImpl(auth, firestore)
+    ): AuthRepository = AuthRepositoryImpl(firebaseAuth, firestore)
 
+    /**
+     * Binds the [RescueRepository] interface to its implementation [RescueRepositoryImpl].
+     */
     @Provides
     @Singleton
     fun provideRescueRepository(
         firestore: FirebaseFirestore
     ): RescueRepository = RescueRepositoryImpl(firestore)
 }
+
