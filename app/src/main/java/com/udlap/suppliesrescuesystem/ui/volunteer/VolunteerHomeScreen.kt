@@ -200,6 +200,12 @@ fun AvailableRescueItem(
     }
 }
 
+/**
+ * Opens an external mapping application (e.g., Google Maps) to navigate to the specified address.
+ *
+ * @param context The current [Context].
+ * @param address The destination address as a string.
+ */
 private fun openMap(context: Context, address: String) {
     val gmmIntentUri = Uri.parse("geo:0,0?q=${Uri.encode(address)}")
     val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)

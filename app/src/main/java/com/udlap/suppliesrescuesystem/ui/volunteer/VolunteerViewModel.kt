@@ -13,13 +13,29 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Sealed class representing the different states of volunteer actions.
+ */
 sealed class VolunteerState {
+    /** Initial state. */
     object Idle : VolunteerState()
+    /** State when an action (claim/complete) is in progress. */
     object Loading : VolunteerState()
+    /** State when an action is successfully completed. */
     object Success : VolunteerState()
+    /** State when an action fails. */
     data class Error(val message: String) : VolunteerState()
 }
 
+/**
+ * ViewModel responsible for managing volunteer-specific operations.
+ *
+ * This includes browsing available rescue batches, claiming a batch, and marking
+ * a rescue as completed. It also filters out expired batches on the client side.
+ *
+ * @property repository The [RescueRepository] for rescue batch operations.
+ * @property authRepository The [AuthRepository] for user authentication.
+ */
 @HiltViewModel
 class VolunteerViewModel @Inject constructor(
     private val repository: RescueRepository,
@@ -27,12 +43,15 @@ class VolunteerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<VolunteerState>(VolunteerState.Idle)
+    /** Observable state of the current volunteer action. */
     val uiState: StateFlow<VolunteerState> = _uiState.asStateFlow()
 
     private val _availableBatches = MutableStateFlow<List<RescueBatch>>(emptyList())
+    /** Observable list of batches available for rescue, filtered by expiration. */
     val availableBatches: StateFlow<List<RescueBatch>> = _availableBatches.asStateFlow()
 
     private val _activeRescue = MutableStateFlow<RescueBatch?>(null)
+    /** Observable representing the rescue batch currently claimed by the volunteer. */
     val activeRescue: StateFlow<RescueBatch?> = _activeRescue.asStateFlow()
 
     init {
@@ -40,6 +59,12 @@ class VolunteerViewModel @Inject constructor(
         loadActiveRescue()
     }
 
+    /**
+     * Loads available batches and filters out those that have already expired.
+     *
+     * Note: Expiration filtering is performed on the client side to simplify Firestore queries
+     * and avoid the need for composite indexes with inequalities on multiple fields.
+     */
     private fun loadAvailableBatches() {
         viewModelScope.launch {
             repository.getAvailableBatches()
@@ -53,6 +78,9 @@ class VolunteerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Loads the batch currently claimed by the logged-in volunteer.
+     */
     private fun loadActiveRescue() {
         val user = authRepository.getCurrentUser() ?: return
         viewModelScope.launch {
@@ -62,6 +90,11 @@ class VolunteerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Claims an available rescue batch for the current volunteer.
+     *
+     * @param batchId Unique identifier of the batch to claim.
+     */
     fun claimRescue(batchId: String) {
         val user = authRepository.getCurrentUser() ?: return
         viewModelScope.launch {
@@ -75,6 +108,11 @@ class VolunteerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Marks the currently claimed rescue batch as completed (delivered).
+     *
+     * @param batchId Unique identifier of the batch to complete.
+     */
     fun completeRescue(batchId: String) {
         viewModelScope.launch {
             _uiState.value = VolunteerState.Loading
@@ -88,6 +126,9 @@ class VolunteerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Resets the UI state to [VolunteerState.Idle].
+     */
     fun resetState() {
         _uiState.value = VolunteerState.Idle
     }

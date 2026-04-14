@@ -12,6 +12,13 @@ import com.udlap.suppliesrescuesystem.ui.volunteer.VolunteerHomeScreen
 import com.udlap.suppliesrescuesystem.ui.recipient.RecipientHomeScreen
 import androidx.compose.material3.Text
 
+/**
+ * Defines the navigation routes available in the application.
+ *
+ * Each object represents a distinct screen or navigation target.
+ *
+ * @property route The string identifier for the navigation destination.
+ */
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
@@ -24,6 +31,13 @@ sealed class Screen(val route: String) {
     }
 }
 
+/**
+ * The root navigation graph for the application.
+ *
+ * Manages the navigation between different screens using [NavHost].
+ *
+ * @param navController The controller used to perform navigation actions.
+ */
 @Composable
 fun NavGraph(navController: NavHostController) {
     NavHost(navController = navController, startDestination = Screen.Login.route) {
@@ -81,6 +95,14 @@ fun NavGraph(navController: NavHostController) {
     }
 }
 
+/**
+ * Navigates the user to the appropriate home screen based on their role.
+ *
+ * Clears the back stack to prevent the user from navigating back to the login screen.
+ *
+ * @param navController The [NavHostController] to use for navigation.
+ * @param role The user's role (e.g., "DONOR", "VOLUNTEER", "RECIPIENT").
+ */
 private fun navigateByRole(navController: NavHostController, role: String) {
     val destination = when (role) {
         "DONOR" -> Screen.DonorHome.route
