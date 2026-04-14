@@ -11,6 +11,12 @@ import androidx.navigation.compose.rememberNavController
 import com.udlap.suppliesrescuesystem.ui.navigation.NavGraph
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * Main activity of the application, serving as the entry point for the UI.
+ *
+ * This activity is annotated with [AndroidEntryPoint] to enable dependency injection with Hilt.
+ * It sets up the Compose content and initializes the navigation graph.
+ */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

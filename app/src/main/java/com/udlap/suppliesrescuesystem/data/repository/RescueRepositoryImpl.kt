@@ -150,7 +150,7 @@ class RescueRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Observes batches assigned to a specific recipient that are either 'CLAIMED' or 'DELIVERED'.
+     * Observes batches assigned to a specific recipient that are 'CLAIMED', 'DELIVERED', or 'RECEIVED'.
      *
      * @param recipientId Unique identifier of the recipient organization.
      * @return Flow of lists containing rescue batches for the recipient.
@@ -158,7 +158,7 @@ class RescueRepositoryImpl @Inject constructor(
     override fun getBatchesForRecipient(recipientId: String): Flow<List<RescueBatch>> = callbackFlow {
         val listener = firestore.collection("rescue_batches")
             .whereEqualTo("recipientId", recipientId)
-            .whereIn("status", listOf("CLAIMED", "DELIVERED"))
+            .whereIn("status", listOf("CLAIMED", "DELIVERED", "RECEIVED"))
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)
@@ -180,6 +180,21 @@ class RescueRepositoryImpl @Inject constructor(
         return try {
             firestore.collection("rescue_batches").document(batchId)
                 .update("status", "RECEIVED").await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Deletes a rescue batch from Firestore.
+     *
+     * @param batchId Unique identifier of the batch.
+     * @return Result indicating success or failure of the delete operation.
+     */
+    override suspend fun deleteBatch(batchId: String): Result<Unit> {
+        return try {
+            firestore.collection("rescue_batches").document(batchId).delete().await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

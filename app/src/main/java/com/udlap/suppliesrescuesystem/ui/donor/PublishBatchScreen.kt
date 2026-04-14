@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -15,10 +16,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 
+/**
+ * Screen for donors to publish new food rescue batches.
+ *
+ * Collects information about the food (title, quantity, pickup window, expiration),
+ * donor details, and allows selecting a recipient from a list of registered shelters.
+ *
+ * @param onNavigateBack Callback to return to the previous screen.
+ * @param viewModel The [RescueViewModel] instance for managing publication and recipient data.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublishBatchScreen(
@@ -28,6 +39,7 @@ fun PublishBatchScreen(
     var title by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
     var pickupWindow by remember { mutableStateOf("") }
+    var expirationHours by remember { mutableStateOf("4") }
     var donorName by remember { mutableStateOf("") }
     var donorAddress by remember { mutableStateOf("") }
     
@@ -98,6 +110,14 @@ fun PublishBatchScreen(
                         onValueChange = { pickupWindow = it },
                         label = { Text("Pickup Window (e.g., 8:00 - 10:00 PM)") },
                         modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
+                    )
+                    TextField(
+                        value = expirationHours,
+                        onValueChange = { expirationHours = it },
+                        label = { Text("Expires in (hours from now)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
 
@@ -179,10 +199,13 @@ fun PublishBatchScreen(
 
             Button(
                 onClick = { 
+                    val hours = expirationHours.toLongOrNull() ?: 4L
+                    val expiresAt = System.currentTimeMillis() + (hours * 3600000L)
                     viewModel.publishBatchExtended(
                         title, quantity, pickupWindow, 
                         donorName, donorAddress, 
-                        selectedRecipientId, selectedRecipientName, recipientAddress
+                        selectedRecipientId, selectedRecipientName, recipientAddress,
+                        expiresAt
                     ) 
                 },
                 modifier = Modifier

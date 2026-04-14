@@ -18,6 +18,15 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
 
+/**
+ * Home screen for users with the DONOR role.
+ *
+ * Displays a list of food batches published by the donor and their current status.
+ * Provides a Floating Action Button (FAB) to navigate to the publication screen.
+ *
+ * @param onNavigateToPublish Callback to navigate to the batch publication screen.
+ * @param viewModel The [RescueViewModel] instance for managing donor-specific rescue data.
+ */
 @Composable
 fun DonorHomeScreen(
     onNavigateToPublish: () -> Unit,
