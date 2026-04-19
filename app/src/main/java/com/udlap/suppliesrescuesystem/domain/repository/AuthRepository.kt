@@ -29,9 +29,25 @@ interface AuthRepository {
     suspend fun login(email: String, password: String): Result<User>
 
     /**
+     * Authenticates a user with a Google ID Token.
+     *
+     * @param idToken The Google ID Token obtained from Credential Manager.
+     * @return Result containing the authenticated User object on success, or a failure exception.
+     */
+    suspend fun signInWithGoogle(idToken: String): Result<User>
+
+    /**
      * Logs out the currently authenticated user.
      */
     fun logout()
+
+    /**
+     * Retrieves the profile document for the specified user from Firestore.
+     *
+     * @param uid The unique identifier of the user.
+     * @return Result containing the User object on success, or a failure exception.
+     */
+    suspend fun getUserProfile(uid: String): Result<User>
 
     /**
      * Retrieves the currently logged-in user, if any.
