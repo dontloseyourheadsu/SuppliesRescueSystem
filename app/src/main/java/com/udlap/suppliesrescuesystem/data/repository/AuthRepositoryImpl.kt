@@ -1,6 +1,7 @@
 package com.udlap.suppliesrescuesystem.data.repository
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.udlap.suppliesrescuesystem.domain.model.User
 import com.udlap.suppliesrescuesystem.domain.repository.AuthRepository
@@ -65,6 +66,62 @@ class AuthRepositoryImpl @Inject constructor(
             
             val user = User(uid = uid, email = email, role = role, name = name)
             Result.success(user)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Authenticates a user with a Google ID Token.
+     *
+     * @param idToken The Google ID Token obtained from Credential Manager.
+     * @return Result containing the authenticated [User] object on success, or a failure exception.
+     */
+    override suspend fun signInWithGoogle(idToken: String): Result<User> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val result = firebaseAuth.signInWithCredential(credential).await()
+            val firebaseUser = result.user ?: throw Exception("Google sign-in failed: User is null")
+            
+            // Check if user already has a role in Firestore
+            val document = firestore.collection("users").document(firebaseUser.uid).get().await()
+            
+            val user = if (document.exists()) {
+                val role = document.getString("role") ?: "VOLUNTEER"
+                val name = document.getString("name") ?: firebaseUser.displayName ?: ""
+                User(uid = firebaseUser.uid, email = firebaseUser.email ?: "", role = role, name = name)
+            } else {
+                // If new user, create initial profile with default role
+                // Note: Ideally, the UI would prompt for a role if missing.
+                // For MVP, we assign VOLUNTEER or let the caller handle it.
+                val newUser = User(
+                    uid = firebaseUser.uid,
+                    email = firebaseUser.email ?: "",
+                    role = "VOLUNTEER",
+                    name = firebaseUser.displayName ?: ""
+                )
+                firestore.collection("users").document(firebaseUser.uid).set(newUser).await()
+                newUser
+            }
+            
+            Result.success(user)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Fetches user profile data from Firestore.
+     */
+    override suspend fun getUserProfile(uid: String): Result<User> {
+        return try {
+            val document = firestore.collection("users").document(uid).get().await()
+            if (document.exists()) {
+                val user = document.toObject(User::class.java) ?: throw Exception("Failed to parse user")
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Profile not found"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
