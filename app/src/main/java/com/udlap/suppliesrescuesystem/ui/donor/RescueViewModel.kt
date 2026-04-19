@@ -2,13 +2,17 @@ package com.udlap.suppliesrescuesystem.ui.donor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.udlap.suppliesrescuesystem.data.local.DraftDataStore
+import com.udlap.suppliesrescuesystem.domain.model.BatchDraft
 import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
 import com.udlap.suppliesrescuesystem.domain.repository.AuthRepository
 import com.udlap.suppliesrescuesystem.domain.repository.RescueRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,15 +34,17 @@ sealed class PublishState {
  * ViewModel responsible for managing donor-specific operations.
  *
  * This includes publishing new food rescue batches, viewing the donor's batch history,
- * and loading potential recipients (shelters).
+ * loading potential recipients (shelters), and managing publication drafts.
  *
  * @property repository The [RescueRepository] for rescue batch operations.
  * @property authRepository The [AuthRepository] for user authentication and recipient lookups.
+ * @property draftDataStore The [DraftDataStore] for managing publication drafts.
  */
 @HiltViewModel
 class RescueViewModel @Inject constructor(
     private val repository: RescueRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val draftDataStore: DraftDataStore
 ) : ViewModel() {
 
     private val _publishState = MutableStateFlow<PublishState>(PublishState.Idle)
@@ -53,9 +59,35 @@ class RescueViewModel @Inject constructor(
     /** Observable list of potential recipient organizations (shelters). */
     val recipients: StateFlow<List<com.udlap.suppliesrescuesystem.domain.model.User>> = _recipients.asStateFlow()
 
+    /** Observable flow of the current batch publication draft. */
+    val batchDraft: StateFlow<BatchDraft> = draftDataStore.batchDraft
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = BatchDraft()
+        )
+
     init {
         loadMyBatches()
         loadRecipients()
+    }
+
+    /**
+     * Updates the current draft in persistent storage.
+     */
+    fun updateDraft(draft: BatchDraft) {
+        viewModelScope.launch {
+            draftDataStore.saveDraft(draft)
+        }
+    }
+
+    /**
+     * Clears the current draft from persistent storage.
+     */
+    fun clearDraft() {
+        viewModelScope.launch {
+            draftDataStore.clearDraft()
+        }
     }
 
     /**
@@ -84,10 +116,6 @@ class RescueViewModel @Inject constructor(
 
     /**
      * Publishes a new food rescue batch with basic information.
-     *
-     * @param title Brief name for the food donation.
-     * @param quantity Amount of food.
-     * @param pickupWindow Timeframe for collection.
      */
     fun publishBatch(title: String, quantity: String, pickupWindow: String) {
         publishBatchExtended(
@@ -98,17 +126,7 @@ class RescueViewModel @Inject constructor(
     }
 
     /**
-     * Publishes a new food rescue batch with complete donor and recipient details.
-     *
-     * @param title Brief name for the food donation.
-     * @param quantity Amount of food.
-     * @param pickupWindow Timeframe for collection.
-     * @param donorName Name of the donor organization.
-     * @param donorAddress Physical address of the donor.
-     * @param recipientId UID of the recipient shelter.
-     * @param recipientName Name of the recipient shelter.
-     * @param recipientAddress Physical address of the recipient shelter.
-     * @param expiresAt Timestamp in milliseconds when the food will no longer be available or safe.
+     * Publishes a new food rescue batch and clears the draft upon success.
      */
     fun publishBatchExtended(
         title: String,
@@ -139,6 +157,7 @@ class RescueViewModel @Inject constructor(
             )
             val result = repository.publishBatch(batch)
             result.onSuccess {
+                draftDataStore.clearDraft() // Clear draft on success
                 _publishState.value = PublishState.Success
             }.onFailure {
                 _publishState.value = PublishState.Error(it.message ?: "Error publishing")

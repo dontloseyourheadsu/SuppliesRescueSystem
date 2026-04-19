@@ -20,12 +20,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.udlap.suppliesrescuesystem.domain.model.BatchDraft
 
 /**
  * Screen for donors to publish new food rescue batches.
  *
  * Collects information about the food (title, quantity, pickup window, expiration),
  * donor details, and allows selecting a recipient from a list of registered shelters.
+ *
+ * It uses Jetpack DataStore to persist a draft of the form, ensuring no progress is lost
+ * if the user accidentally navigates away.
  *
  * @param onNavigateBack Callback to return to the previous screen.
  * @param viewModel The [RescueViewModel] instance for managing publication and recipient data.
@@ -51,6 +55,26 @@ fun PublishBatchScreen(
     
     val publishState by viewModel.publishState.collectAsState()
     val recipients by viewModel.recipients.collectAsState()
+    val draft by viewModel.batchDraft.collectAsState()
+
+    // Load draft on entry
+    LaunchedEffect(draft) {
+        if (title.isEmpty()) title = draft.title
+        if (quantity.isEmpty()) quantity = draft.quantity
+        if (pickupWindow.isEmpty()) pickupWindow = draft.pickupWindow
+        if (selectedRecipientId.isEmpty() && draft.recipientId.isNotEmpty()) {
+            selectedRecipientId = draft.recipientId
+            // Name will be updated once recipients list is loaded and matches ID
+        }
+    }
+
+    // Update recipient name when ID or recipients list changes
+    LaunchedEffect(selectedRecipientId, recipients) {
+        val matchingRecipient = recipients.find { it.uid == selectedRecipientId }
+        if (matchingRecipient != null) {
+            selectedRecipientName = matchingRecipient.name
+        }
+    }
 
     LaunchedEffect(publishState) {
         if (publishState is PublishState.Success) {
@@ -93,21 +117,30 @@ fun PublishBatchScreen(
                     Text("FOOD INFO", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     TextField(
                         value = title,
-                        onValueChange = { title = it },
+                        onValueChange = { 
+                            title = it
+                            viewModel.updateDraft(BatchDraft(title, quantity, pickupWindow, selectedRecipientId))
+                        },
                         label = { Text("Title (e.g., 20 rolls of bread)") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
                     TextField(
                         value = quantity,
-                        onValueChange = { quantity = it },
+                        onValueChange = { 
+                            quantity = it
+                            viewModel.updateDraft(BatchDraft(title, quantity, pickupWindow, selectedRecipientId))
+                        },
                         label = { Text("Approximate Quantity/Weight") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
                     TextField(
                         value = pickupWindow,
-                        onValueChange = { pickupWindow = it },
+                        onValueChange = { 
+                            pickupWindow = it
+                            viewModel.updateDraft(BatchDraft(title, quantity, pickupWindow, selectedRecipientId))
+                        },
                         label = { Text("Pickup Window (e.g., 8:00 - 10:00 PM)") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
@@ -170,6 +203,7 @@ fun PublishBatchScreen(
                                     onClick = {
                                         selectedRecipientId = recipient.uid
                                         selectedRecipientName = recipient.name
+                                        viewModel.updateDraft(BatchDraft(title, quantity, pickupWindow, selectedRecipientId))
                                         expanded = false
                                     }
                                 )
