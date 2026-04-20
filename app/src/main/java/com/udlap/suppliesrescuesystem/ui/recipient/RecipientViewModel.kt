@@ -3,12 +3,14 @@ package com.udlap.suppliesrescuesystem.ui.recipient
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
+import com.udlap.suppliesrescuesystem.domain.model.RecipientNeed
 import com.udlap.suppliesrescuesystem.domain.repository.AuthRepository
 import com.udlap.suppliesrescuesystem.domain.repository.RescueRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,24 +18,12 @@ import javax.inject.Inject
  * Sealed class representing the different states of recipient actions.
  */
 sealed class RecipientState {
-    /** Initial state. */
     object Idle : RecipientState()
-    /** State when a confirmation action is in progress. */
     object Loading : RecipientState()
-    /** State when the action is successfully completed. */
     object Success : RecipientState()
-    /** State when the action fails. */
     data class Error(val message: String) : RecipientState()
 }
 
-/**
- * ViewModel responsible for managing recipient-specific operations.
- *
- * This includes viewing incoming rescue batches and confirming their reception.
- *
- * @property repository The [RescueRepository] for rescue batch operations.
- * @property authRepository The [AuthRepository] for user authentication.
- */
 @HiltViewModel
 class RecipientViewModel @Inject constructor(
     private val repository: RescueRepository,
@@ -41,20 +31,23 @@ class RecipientViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<RecipientState>(RecipientState.Idle)
-    /** Observable state of the current recipient action. */
     val uiState: StateFlow<RecipientState> = _uiState.asStateFlow()
 
     private val _incomingBatches = MutableStateFlow<List<RescueBatch>>(emptyList())
-    /** Observable list of rescue batches assigned to the current recipient. */
     val incomingBatches: StateFlow<List<RescueBatch>> = _incomingBatches.asStateFlow()
+
+    private val _myNeeds = MutableStateFlow<List<RecipientNeed>>(emptyList())
+    val myNeeds: StateFlow<List<RecipientNeed>> = _myNeeds.asStateFlow()
+
+    private val _openBatches = MutableStateFlow<List<RescueBatch>>(emptyList())
+    val openBatches: StateFlow<List<RescueBatch>> = _openBatches.asStateFlow()
 
     init {
         loadIncomingBatches()
+        loadMyNeeds()
+        loadOpenBatches()
     }
 
-    /**
-     * Loads all rescue batches assigned to the currently logged-in recipient.
-     */
     private fun loadIncomingBatches() {
         val user = authRepository.getCurrentUser() ?: return
         viewModelScope.launch {
@@ -64,43 +57,104 @@ class RecipientViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Confirms that a rescue batch has been physically received by the recipient organization.
-     *
-     * @param batchId Unique identifier of the batch to confirm.
-     */
+    private fun loadMyNeeds() {
+        val user = authRepository.getCurrentUser() ?: return
+        viewModelScope.launch {
+            repository.getNeedsByRecipient(user.uid).collect {
+                _myNeeds.value = it
+            }
+        }
+    }
+
+    private fun loadOpenBatches() {
+        viewModelScope.launch {
+            repository.getAvailableBatches()
+                .map { list ->
+                    // Filter for batches with NO recipient assigned yet
+                    list.filter { it.recipientId == null || it.recipientId.isEmpty() }
+                }
+                .collect {
+                    _openBatches.value = it
+                }
+        }
+    }
+
+    fun publishNeed(description: String) {
+        val user = authRepository.getCurrentUser() ?: return
+        viewModelScope.launch {
+            _uiState.value = RecipientState.Loading
+            val need = RecipientNeed(
+                recipientId = user.uid,
+                recipientName = user.name,
+                description = description
+            )
+            val result = repository.publishNeed(need)
+            result.onSuccess {
+                _uiState.value = RecipientState.Success
+            }.onFailure {
+                _uiState.value = RecipientState.Error(it.message ?: "Error publishing need")
+            }
+        }
+    }
+
+    fun deleteNeed(needId: String) {
+        viewModelScope.launch {
+            _uiState.value = RecipientState.Loading
+            repository.deleteNeed(needId).onSuccess {
+                _uiState.value = RecipientState.Success
+            }.onFailure {
+                _uiState.value = RecipientState.Error("Error deleting need")
+            }
+        }
+    }
+
+    fun claimOpenBatch(batchId: String) {
+        val user = authRepository.getCurrentUser() ?: return
+        
+        // LIMIT: 1 claim per active need
+        if (_myNeeds.value.isEmpty()) {
+            _uiState.value = RecipientState.Error("You must post what you are looking for first!")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = RecipientState.Loading
+            val result = repository.claimOpenBatch(
+                batchId = batchId,
+                recipientId = user.uid,
+                recipientName = user.name,
+                recipientAddress = user.address ?: ""
+            )
+            result.onSuccess {
+                _uiState.value = RecipientState.Success
+            }.onFailure {
+                _uiState.value = RecipientState.Error(it.message ?: "Error claiming batch")
+            }
+        }
+    }
+
     fun confirmReception(batchId: String) {
         viewModelScope.launch {
             _uiState.value = RecipientState.Loading
-            val result = repository.confirmReception(batchId)
-            result.onSuccess {
+            repository.confirmReception(batchId).onSuccess {
                 _uiState.value = RecipientState.Success
             }.onFailure {
-                _uiState.value = RecipientState.Error(it.message ?: "Error al confirmar")
+                _uiState.value = RecipientState.Error("Error confirming reception")
             }
         }
     }
 
-    /**
-     * Deletes a rescue batch from the system.
-     *
-     * @param batchId Unique identifier of the batch to delete.
-     */
     fun deleteBatch(batchId: String) {
         viewModelScope.launch {
             _uiState.value = RecipientState.Loading
-            val result = repository.deleteBatch(batchId)
-            result.onSuccess {
+            repository.deleteBatch(batchId).onSuccess {
                 _uiState.value = RecipientState.Success
             }.onFailure {
-                _uiState.value = RecipientState.Error(it.message ?: "Error al eliminar")
+                _uiState.value = RecipientState.Error("Error deleting batch")
             }
         }
     }
 
-    /**
-     * Resets the UI state to [RecipientState.Idle].
-     */
     fun resetState() {
         _uiState.value = RecipientState.Idle
     }
