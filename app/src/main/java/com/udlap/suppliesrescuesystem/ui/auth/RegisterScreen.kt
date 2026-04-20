@@ -2,7 +2,9 @@ package com.udlap.suppliesrescuesystem.ui.auth
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,16 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 
-/**
- * Screen that allows new users to create an account.
- *
- * Captures user details including name, email, password, and role selection.
- * Adheres to the "Bento Box" design system for input fields.
- *
- * @param onRegisterSuccess Callback triggered upon successful registration, providing the user's role.
- * @param onNavigateToLogin Callback to navigate back to the login screen.
- * @param viewModel The [AuthViewModel] instance for managing registration state.
- */
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: (String) -> Unit,
@@ -33,8 +25,10 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
     var role by remember { mutableStateOf("VOLUNTEER") }
     val authState by viewModel.authState.collectAsState()
+    val scrollState = rememberScrollState()
 
     val roles = listOf("DONOR", "VOLUNTEER", "RECIPIENT")
 
@@ -52,7 +46,8 @@ fun RegisterScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -79,12 +74,7 @@ fun RegisterScreen(
                         onValueChange = { name = it },
                         label = { Text("Full Name / Org Name") },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Black,
-                            unfocusedIndicatorColor = Color.LightGray
-                        ),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent),
                         singleLine = true
                     )
 
@@ -95,15 +85,21 @@ fun RegisterScreen(
                         onValueChange = { email = it },
                         label = { Text("Email") },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Black,
-                            unfocusedIndicatorColor = Color.LightGray
-                        ),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent),
                         singleLine = true
                     )
                     
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    TextField(
+                        value = address,
+                        onValueChange = { address = it },
+                        label = { Text("Physical Address") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent),
+                        singleLine = true
+                    )
+
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     TextField(
@@ -112,12 +108,7 @@ fun RegisterScreen(
                         label = { Text("Password") },
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(),
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Black,
-                            unfocusedIndicatorColor = Color.LightGray
-                        ),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent),
                         singleLine = true
                     )
 
@@ -155,16 +146,13 @@ fun RegisterScreen(
             }
 
             Button(
-                onClick = { viewModel.register(email, password, role, name) },
+                onClick = { viewModel.register(email, password, role, name, address) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4CAF50),
-                    contentColor = Color.White
-                ),
-                enabled = authState !is AuthState.Loading && name.isNotBlank() && email.isNotBlank()
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                enabled = authState !is AuthState.Loading && name.isNotBlank() && email.isNotBlank() && address.isNotBlank()
             ) {
                 if (authState is AuthState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))

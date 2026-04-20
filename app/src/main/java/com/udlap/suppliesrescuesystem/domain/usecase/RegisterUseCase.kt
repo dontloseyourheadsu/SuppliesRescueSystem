@@ -24,7 +24,7 @@ class RegisterUseCase @Inject constructor(
      * @param name User's organization or individual name.
      * @return Result containing the created [User] object on success, or a failure exception.
      */
-    suspend operator fun invoke(email: String, password: String, role: String, name: String): Result<User> {
-        return repository.register(email, password, role, name)
+    suspend operator fun invoke(email: String, password: String, role: String, name: String, address: String): Result<User> {
+        return repository.register(email, password, role, name, address)
     }
 }

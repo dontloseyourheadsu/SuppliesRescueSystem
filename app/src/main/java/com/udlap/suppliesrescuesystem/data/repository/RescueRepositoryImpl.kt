@@ -48,7 +48,6 @@ class RescueRepositoryImpl @Inject constructor(
     override fun getAvailableBatches(): Flow<List<RescueBatch>> = callbackFlow {
         val listener = firestore.collection("rescue_batches")
             .whereEqualTo("status", "AVAILABLE")
-            .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     handleFirestoreError(error)
@@ -56,7 +55,8 @@ class RescueRepositoryImpl @Inject constructor(
                     return@addSnapshotListener
                 }
                 val batches = snapshot?.toObjects(RescueBatch::class.java) ?: emptyList()
-                trySend(batches)
+                // Sort manually in Kotlin to avoid requiring a composite index in Firestore
+                trySend(batches.sortedByDescending { it.createdAt })
             }
         awaitClose { listener.remove() }
     }
@@ -173,7 +173,6 @@ class RescueRepositoryImpl @Inject constructor(
     override fun getNeedsByRecipient(recipientId: String): Flow<List<RecipientNeed>> = callbackFlow {
         val listener = firestore.collection("recipient_needs")
             .whereEqualTo("recipientId", recipientId)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     handleFirestoreError(error)
@@ -181,7 +180,7 @@ class RescueRepositoryImpl @Inject constructor(
                     return@addSnapshotListener
                 }
                 val needs = snapshot?.toObjects(RecipientNeed::class.java) ?: emptyList()
-                trySend(needs)
+                trySend(needs.sortedByDescending { it.createdAt })
             }
         awaitClose { listener.remove() }
     }
@@ -205,13 +204,25 @@ class RescueRepositoryImpl @Inject constructor(
             firestore.runTransaction { transaction ->
                 val ref = firestore.collection("rescue_batches").document(batchId)
                 val snapshot = transaction.get(ref)
-                val existingRecipientId = snapshot.getString("recipientId")
                 
-                if (existingRecipientId == null || existingRecipientId.isEmpty()) {
+                // Use field path to be safe with nullable fields in Firestore
+                val existingRecipientId = snapshot.getString("recipientId")
+                val status = snapshot.getString("status")
+                
+                if (status != "AVAILABLE") {
+                    throw Exception("Este lote no está disponible")
+                }
+
+                if (existingRecipientId.isNullOrEmpty()) {
                     transaction.update(ref, mapOf(
                         "recipientId" to recipientId,
                         "recipientName" to recipientName,
                         "recipientAddress" to recipientAddress
+                        // Note: We DON'T change status to CLAIMED yet, 
+                        // as a volunteer still needs to claim the transport.
+                        // Or should we? Business rule says: 
+                        // "evitar que dos voluntarios reclamen la misma recolección"
+                        // If a recipient claims it, it's still AVAILABLE for a volunteer.
                     ))
                 } else {
                     throw Exception("Este lote ya tiene un receptor asignado")
