@@ -59,6 +59,10 @@ class RescueViewModel @Inject constructor(
     /** Observable list of potential recipient organizations (shelters). */
     val recipients: StateFlow<List<com.udlap.suppliesrescuesystem.domain.model.User>> = _recipients.asStateFlow()
 
+    private val _activeNeeds = MutableStateFlow<List<com.udlap.suppliesrescuesystem.domain.model.RecipientNeed>>(emptyList())
+    /** Observable list of active needs from recipients. */
+    val activeNeeds: StateFlow<List<com.udlap.suppliesrescuesystem.domain.model.RecipientNeed>> = _activeNeeds.asStateFlow()
+
     /** Observable flow of the current batch publication draft. */
     val batchDraft: StateFlow<BatchDraft> = draftDataStore.batchDraft
         .stateIn(
@@ -70,6 +74,15 @@ class RescueViewModel @Inject constructor(
     init {
         loadMyBatches()
         loadRecipients()
+        loadActiveNeeds()
+    }
+
+    private fun loadActiveNeeds() {
+        viewModelScope.launch {
+            repository.getActiveNeeds().collect {
+                _activeNeeds.value = it
+            }
+        }
     }
 
     /**

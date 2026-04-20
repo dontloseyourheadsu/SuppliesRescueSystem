@@ -1,6 +1,7 @@
 package com.udlap.suppliesrescuesystem.domain.repository
 
 import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
+import com.udlap.suppliesrescuesystem.domain.model.RecipientNeed
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -80,4 +81,29 @@ interface RescueRepository {
      * @return Result indicating success or failure of the deletion operation.
      */
     suspend fun deleteBatch(batchId: String): Result<Unit>
+
+    /**
+     * Publishes a new need from a recipient organization.
+     */
+    suspend fun publishNeed(need: RecipientNeed): Result<Unit>
+
+    /**
+     * Retrieves all active needs from recipients.
+     */
+    fun getActiveNeeds(): Flow<List<RecipientNeed>>
+
+    /**
+     * Retrieves needs for a specific recipient.
+     */
+    fun getNeedsByRecipient(recipientId: String): Flow<List<RecipientNeed>>
+
+    /**
+     * Deletes a need.
+     */
+    suspend fun deleteNeed(needId: String): Result<Unit>
+
+    /**
+     * Claims an "open" batch by a recipient.
+     */
+    suspend fun claimOpenBatch(batchId: String, recipientId: String, recipientName: String, recipientAddress: String): Result<Unit>
 }

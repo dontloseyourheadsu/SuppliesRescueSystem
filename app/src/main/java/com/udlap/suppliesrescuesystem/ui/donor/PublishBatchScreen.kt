@@ -48,13 +48,14 @@ fun PublishBatchScreen(
     var donorAddress by remember { mutableStateOf("") }
     
     var selectedRecipientId by remember { mutableStateOf("") }
-    var selectedRecipientName by remember { mutableStateOf("Select Recipient") }
+    var selectedRecipientName by remember { mutableStateOf("Leave Open (Any Recipient)") }
     var recipientAddress by remember { mutableStateOf("") }
     
     var expanded by remember { mutableStateOf(false) }
     
     val publishState by viewModel.publishState.collectAsState()
     val recipients by viewModel.recipients.collectAsState()
+    val activeNeeds by viewModel.activeNeeds.collectAsState()
     val draft by viewModel.batchDraft.collectAsState()
 
     // Load draft on entry
@@ -64,15 +65,18 @@ fun PublishBatchScreen(
         if (pickupWindow.isEmpty()) pickupWindow = draft.pickupWindow
         if (selectedRecipientId.isEmpty() && draft.recipientId.isNotEmpty()) {
             selectedRecipientId = draft.recipientId
-            // Name will be updated once recipients list is loaded and matches ID
         }
     }
 
     // Update recipient name when ID or recipients list changes
     LaunchedEffect(selectedRecipientId, recipients) {
-        val matchingRecipient = recipients.find { it.uid == selectedRecipientId }
-        if (matchingRecipient != null) {
-            selectedRecipientName = matchingRecipient.name
+        if (selectedRecipientId.isEmpty()) {
+            selectedRecipientName = "Leave Open (Any Recipient)"
+        } else {
+            val matchingRecipient = recipients.find { it.uid == selectedRecipientId }
+            if (matchingRecipient != null) {
+                selectedRecipientName = matchingRecipient.name
+            }
         }
     }
 
@@ -105,6 +109,26 @@ fun PublishBatchScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (activeNeeds.isNotEmpty()) {
+                Text(
+                    "WHAT RECIPIENTS ARE LOOKING FOR:",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 14.sp,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                )
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).border(1.dp, Color.Black, RoundedCornerShape(4.dp)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        activeNeeds.take(3).forEach { need ->
+                            Text("• ${need.recipientName}: ${need.description}", fontSize = 12.sp, modifier = Modifier.padding(vertical = 2.dp))
+                        }
+                    }
+                }
+            }
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -172,7 +196,7 @@ fun PublishBatchScreen(
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
-                    Text("RECIPIENT INFO", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("RECIPIENT INFO (OPTIONAL)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     
                     Box(modifier = Modifier.fillMaxWidth()) {
                         OutlinedCard(
@@ -181,7 +205,7 @@ fun PublishBatchScreen(
                                 .clickable { expanded = true }
                                 .padding(vertical = 8.dp),
                             shape = RoundedCornerShape(4.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.Black)
                         ) {
                             Row(
                                 modifier = Modifier.padding(16.dp),
@@ -197,12 +221,23 @@ fun PublishBatchScreen(
                             onDismissRequest = { expanded = false },
                             modifier = Modifier.fillMaxWidth(0.8f)
                         ) {
+                            DropdownMenuItem(
+                                text = { Text("Leave Open (Any Recipient)") },
+                                onClick = {
+                                    selectedRecipientId = ""
+                                    selectedRecipientName = "Leave Open (Any Recipient)"
+                                    recipientAddress = ""
+                                    viewModel.updateDraft(BatchDraft(title, quantity, pickupWindow, selectedRecipientId))
+                                    expanded = false
+                                }
+                            )
                             recipients.forEach { recipient ->
                                 DropdownMenuItem(
                                     text = { Text(recipient.name) },
                                     onClick = {
                                         selectedRecipientId = recipient.uid
                                         selectedRecipientName = recipient.name
+                                        recipientAddress = recipient.address ?: ""
                                         viewModel.updateDraft(BatchDraft(title, quantity, pickupWindow, selectedRecipientId))
                                         expanded = false
                                     }
@@ -214,7 +249,7 @@ fun PublishBatchScreen(
                     TextField(
                         value = recipientAddress,
                         onValueChange = { recipientAddress = it },
-                        label = { Text("Recipient Address") },
+                        label = { Text("Recipient Address (Auto-filled if selected)") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
@@ -238,7 +273,7 @@ fun PublishBatchScreen(
                     viewModel.publishBatchExtended(
                         title, quantity, pickupWindow, 
                         donorName, donorAddress, 
-                        selectedRecipientId, selectedRecipientName, recipientAddress,
+                        selectedRecipientId, if (selectedRecipientId.isEmpty()) "" else selectedRecipientName, recipientAddress,
                         expiresAt
                     ) 
                 },
@@ -247,7 +282,7 @@ fun PublishBatchScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                enabled = publishState !is PublishState.Loading && title.isNotBlank() && selectedRecipientId.isNotBlank()
+                enabled = publishState !is PublishState.Loading && title.isNotBlank()
             ) {
                 if (publishState is PublishState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
