@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.udlap.suppliesrescuesystem.ui.auth.LoginScreen
 import com.udlap.suppliesrescuesystem.ui.auth.RegisterScreen
+import com.udlap.suppliesrescuesystem.ui.auth.CompleteProfileScreen
 import com.udlap.suppliesrescuesystem.ui.donor.DonorHomeScreen
 import com.udlap.suppliesrescuesystem.ui.donor.PublishBatchScreen
 import com.udlap.suppliesrescuesystem.ui.volunteer.VolunteerHomeScreen
@@ -32,6 +33,7 @@ sealed class Screen(val route: String) {
     object Splash : Screen("splash")
     object Login : Screen("login")
     object Register : Screen("register")
+    object CompleteProfile : Screen("complete_profile")
     object DonorHome : Screen("donor_home")
     object VolunteerHome : Screen("volunteer_home")
     object RecipientHome : Screen("recipient_home")
@@ -57,6 +59,11 @@ fun NavGraph(navController: NavHostController) {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
+                },
+                onIncompleteProfile = {
+                    navController.navigate(Screen.CompleteProfile.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
                 }
             )
         }
@@ -69,6 +76,9 @@ fun NavGraph(navController: NavHostController) {
                 onNavigateToRegister = {
                     navController.navigate(Screen.Register.route)
                 },
+                onIncompleteProfile = {
+                    navController.navigate(Screen.CompleteProfile.route)
+                },
                 viewModel = authViewModel
             )
         }
@@ -79,6 +89,15 @@ fun NavGraph(navController: NavHostController) {
                 },
                 onNavigateToLogin = {
                     navController.navigate(Screen.Login.route)
+                },
+                viewModel = authViewModel
+            )
+        }
+
+        composable(Screen.CompleteProfile.route) {
+            CompleteProfileScreen(
+                onCompleteSuccess = { role ->
+                    navigateByRole(navController, role)
                 },
                 viewModel = authViewModel
             )
@@ -147,7 +166,8 @@ fun NavGraph(navController: NavHostController) {
 fun SplashScreen(
     viewModel: AuthViewModel,
     onAuthenticated: (String) -> Unit,
-    onNotAuthenticated: () -> Unit
+    onNotAuthenticated: () -> Unit,
+    onIncompleteProfile: () -> Unit
 ) {
     val authState by viewModel.authState.collectAsState()
 
@@ -155,6 +175,7 @@ fun SplashScreen(
         when (authState) {
             is AuthState.Success -> onAuthenticated((authState as AuthState.Success).user.role)
             is AuthState.NoSession -> onNotAuthenticated()
+            is AuthState.IncompleteProfile -> onIncompleteProfile()
             else -> { /* Keep loading */ }
         }
     }

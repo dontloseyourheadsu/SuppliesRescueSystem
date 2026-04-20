@@ -71,7 +71,7 @@ class RecipientViewModel @Inject constructor(
             repository.getAvailableBatches()
                 .map { list ->
                     // Filter for batches with NO recipient assigned yet
-                    list.filter { it.recipientId == null || it.recipientId.isEmpty() }
+                    list.filter { it.recipientId.isNullOrEmpty() }
                 }
                 .collect {
                     _openBatches.value = it
@@ -111,12 +111,6 @@ class RecipientViewModel @Inject constructor(
     fun claimOpenBatch(batchId: String) {
         val user = authRepository.getCurrentUser() ?: return
         
-        // LIMIT: 1 claim per active need
-        if (_myNeeds.value.isEmpty()) {
-            _uiState.value = RecipientState.Error("You must post what you are looking for first!")
-            return
-        }
-
         viewModelScope.launch {
             _uiState.value = RecipientState.Loading
             val result = repository.claimOpenBatch(
