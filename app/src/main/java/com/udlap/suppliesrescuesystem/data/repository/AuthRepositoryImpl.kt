@@ -31,12 +31,12 @@ class AuthRepositoryImpl @Inject constructor(
      * @param name User's organization or individual name.
      * @return Result containing the created [User] object on success, or a failure exception.
      */
-    override suspend fun register(email: String, password: String, role: String, name: String): Result<User> {
+    override suspend fun register(email: String, password: String, role: String, name: String, address: String): Result<User> {
         return try {
             val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             val uid = result.user?.uid ?: throw Exception("UID is null")
             
-            val user = User(uid = uid, email = email, role = role, name = name)
+            val user = User(uid = uid, email = email, role = role, name = name, address = address)
             
             // Save user role in Firestore
             firestore.collection("users").document(uid).set(user).await()
@@ -48,7 +48,7 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Authenticates a user with Firebase Auth and retrieves their profile from Firestore.
+     * Authenticates a user with their email and password and retrieves their profile from Firestore.
      *
      * @param email User's email address.
      * @param password User's password.
@@ -59,12 +59,18 @@ class AuthRepositoryImpl @Inject constructor(
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
             val uid = result.user?.uid ?: throw Exception("UID is null")
             
-            // Get user role from Firestore
             val document = firestore.collection("users").document(uid).get().await()
-            val role = document.getString("role") ?: "VOLUNTEER"
-            val name = document.getString("name") ?: ""
             
-            val user = User(uid = uid, email = email, role = role, name = name)
+            if (!document.exists()) {
+                throw Exception("INCOMPLETE_PROFILE")
+            }
+            
+            val user = document.toObject(User::class.java) ?: throw Exception("Failed to parse user")
+            
+            if (user.role.isBlank() || user.address.isNullOrBlank()) {
+                throw Exception("INCOMPLETE_PROFILE")
+            }
+            
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
@@ -83,25 +89,16 @@ class AuthRepositoryImpl @Inject constructor(
             val result = firebaseAuth.signInWithCredential(credential).await()
             val firebaseUser = result.user ?: throw Exception("Google sign-in failed: User is null")
             
-            // Check if user already has a role in Firestore
             val document = firestore.collection("users").document(firebaseUser.uid).get().await()
             
-            val user = if (document.exists()) {
-                val role = document.getString("role") ?: "VOLUNTEER"
-                val name = document.getString("name") ?: firebaseUser.displayName ?: ""
-                User(uid = firebaseUser.uid, email = firebaseUser.email ?: "", role = role, name = name)
-            } else {
-                // If new user, create initial profile with default role
-                // Note: Ideally, the UI would prompt for a role if missing.
-                // For MVP, we assign VOLUNTEER or let the caller handle it.
-                val newUser = User(
-                    uid = firebaseUser.uid,
-                    email = firebaseUser.email ?: "",
-                    role = "VOLUNTEER",
-                    name = firebaseUser.displayName ?: ""
-                )
-                firestore.collection("users").document(firebaseUser.uid).set(newUser).await()
-                newUser
+            if (!document.exists()) {
+                throw Exception("INCOMPLETE_PROFILE")
+            }
+
+            val user = document.toObject(User::class.java) ?: throw Exception("Failed to parse user")
+            
+            if (user.role.isBlank() || user.address.isNullOrBlank()) {
+                throw Exception("INCOMPLETE_PROFILE")
             }
             
             Result.success(user)
@@ -157,7 +154,9 @@ class AuthRepositoryImpl @Inject constructor(
                 .whereEqualTo("role", "RECIPIENT")
                 .get().await()
             val recipients = snapshot.toObjects(User::class.java)
-            Result.success(recipients)
+            // Ensure we only return users with names and addresses
+            val validRecipients = recipients.filter { it.name.isNotBlank() && !it.address.isNullOrBlank() }
+            Result.success(validRecipients)
         } catch (e: Exception) {
             Result.failure(e)
         }

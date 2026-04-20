@@ -22,7 +22,13 @@ class CheckInitialAuthUseCase @Inject constructor(
     suspend operator fun invoke(): Result<User> {
         val currentUser = repository.getCurrentUser()
         return if (currentUser != null) {
-            repository.getUserProfile(currentUser.uid)
+            val result = repository.getUserProfile(currentUser.uid)
+            result.onSuccess { user ->
+                if (user.role.isBlank() || user.address.isNullOrBlank()) {
+                    return Result.failure(Exception("INCOMPLETE_PROFILE"))
+                }
+            }
+            result
         } else {
             Result.failure(Exception("No active session found"))
         }

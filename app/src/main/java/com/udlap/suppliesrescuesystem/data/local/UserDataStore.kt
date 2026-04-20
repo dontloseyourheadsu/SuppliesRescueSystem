@@ -1,49 +1,87 @@
 package com.udlap.suppliesrescuesystem.data.local
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import android.content.SharedPreferences
 import com.udlap.suppliesrescuesystem.domain.model.User
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private val Context.userPrefsDataStore: DataStore<Preferences> by preferencesDataStore(name = "user_prefs")
 
 @Singleton
 class UserDataStore @Inject constructor(private val context: Context) {
 
-    private object Keys {
-        val UID = stringPreferencesKey("user_uid")
-        val NAME = stringPreferencesKey("user_name")
-        val EMAIL = stringPreferencesKey("user_email")
-        val ROLE = stringPreferencesKey("user_role")
+    private val prefs: SharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+
+    private val _cachedUserFlow = MutableStateFlow<User?>(null)
+    val cachedUser: StateFlow<User?> = _cachedUserFlow.asStateFlow()
+
+    private val _rememberMeFlow = MutableStateFlow(false)
+    val rememberMe: StateFlow<Boolean> = _rememberMeFlow.asStateFlow()
+
+    private val _savedEmailFlow = MutableStateFlow<String?>(null)
+    val savedEmail: StateFlow<String?> = _savedEmailFlow.asStateFlow()
+
+    init {
+        // Synchronous initial load for instant UI
+        _cachedUserFlow.value = getSyncUser()
+        _rememberMeFlow.value = prefs.getBoolean("remember_me", false)
+        _savedEmailFlow.value = prefs.getString("saved_email", null)
     }
 
-    suspend fun saveUser(user: User) {
-        context.userPrefsDataStore.edit { prefs ->
-            prefs[Keys.UID] = user.uid
-            prefs[Keys.NAME] = user.name
-            prefs[Keys.EMAIL] = user.email
-            prefs[Keys.ROLE] = user.role
+    fun saveUser(user: User, rememberMe: Boolean = true) {
+        prefs.edit().apply {
+            putString("user_uid", user.uid)
+            putString("user_name", user.name)
+            putString("user_email", user.email)
+            putString("user_role", user.role)
+            putBoolean("remember_me", rememberMe)
+            if (rememberMe) {
+                putString("saved_email", user.email)
+            }
+            apply()
         }
+        _cachedUserFlow.value = user
+        _rememberMeFlow.value = rememberMe
+        if (rememberMe) _savedEmailFlow.value = user.email
     }
 
-    suspend fun clearUser() {
-        context.userPrefsDataStore.edit { it.clear() }
+    fun setRememberMe(enabled: Boolean) {
+        prefs.edit().putBoolean("remember_me", enabled).apply()
+        if (!enabled) {
+            prefs.edit().remove("saved_email").apply()
+            _savedEmailFlow.value = null
+        }
+        _rememberMeFlow.value = enabled
     }
 
-    val cachedUser: Flow<User?> = context.userPrefsDataStore.data.map { prefs ->
-        val uid = prefs[Keys.UID] ?: return@map null
-        User(
+    fun clearUser() {
+        val rememberMeVal = prefs.getBoolean("remember_me", false)
+        val savedEmailVal = prefs.getString("saved_email", null)
+        
+        prefs.edit().clear().apply()
+        
+        prefs.edit().apply {
+            putBoolean("remember_me", rememberMeVal)
+            if (rememberMeVal && savedEmailVal != null) {
+                putString("saved_email", savedEmailVal)
+            }
+            apply()
+        }
+        
+        _cachedUserFlow.value = null
+        _rememberMeFlow.value = rememberMeVal
+        _savedEmailFlow.value = if (rememberMeVal) savedEmailVal else null
+    }
+
+    fun getSyncUser(): User? {
+        val uid = prefs.getString("user_uid", null) ?: return null
+        return User(
             uid = uid,
-            name = prefs[Keys.NAME] ?: "",
-            email = prefs[Keys.EMAIL] ?: "",
-            role = prefs[Keys.ROLE] ?: ""
+            name = prefs.getString("user_name", "") ?: "",
+            email = prefs.getString("user_email", "") ?: "",
+            role = prefs.getString("user_role", "") ?: ""
         )
     }
 }

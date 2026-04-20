@@ -17,7 +17,7 @@ interface AuthRepository {
      * @param name User's organization or individual name.
      * @return Result containing the created User object on success, or a failure exception.
      */
-    suspend fun register(email: String, password: String, role: String, name: String): Result<User>
+    suspend fun register(email: String, password: String, role: String, name: String, address: String): Result<User>
 
     /**
      * Authenticates a user with their email and password.
