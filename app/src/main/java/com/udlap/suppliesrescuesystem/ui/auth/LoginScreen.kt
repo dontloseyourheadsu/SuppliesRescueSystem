@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     onLoginSuccess: (String) -> Unit,
     onNavigateToRegister: () -> Unit,
+    onIncompleteProfile: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
@@ -36,14 +37,25 @@ fun LoginScreen(
     var loginError by remember { mutableStateOf<String?>(null) }
     
     val authState by viewModel.authState.collectAsState()
+    val savedEmailValue by viewModel.savedEmail.collectAsState()
+    val rememberMeValue by viewModel.rememberMe.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val credentialManager = CredentialManager.create(context)
     val webClientId = stringResource(id = R.string.default_web_client_id)
 
+    LaunchedEffect(savedEmailValue) {
+        if (savedEmailValue != null && email.isEmpty()) {
+            email = savedEmailValue!!
+        }
+    }
+
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
             onLoginSuccess((authState as AuthState.Success).user.role)
+            viewModel.resetState()
+        } else if (authState is AuthState.IncompleteProfile) {
+            onIncompleteProfile()
             viewModel.resetState()
         } else if (authState is AuthState.Error) {
             loginError = (authState as AuthState.Error).message
@@ -90,7 +102,21 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = rememberMeValue,
+                    onCheckedChange = { viewModel.setRememberMe(it) },
+                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF4CAF50))
+                )
+                Text(text = "Remember me", fontSize = 14.sp, color = Color.Black)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (loginError != null) {
                 Text(text = loginError!!, color = Color.Red, fontSize = 14.sp, modifier = Modifier.padding(bottom = 16.dp))
