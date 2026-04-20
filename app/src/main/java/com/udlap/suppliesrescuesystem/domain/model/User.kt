@@ -9,9 +9,9 @@ package com.udlap.suppliesrescuesystem.domain.model
  * @property name Human-readable name of the user, which can be an organization name or individual name.
  */
 data class User(
-    val uid: String,
-    val email: String,
-    val role: String, // DONOR, VOLUNTEER, RECIPIENT
+    val uid: String = "",
+    val email: String = "",
+    val role: String = "", // DONOR, VOLUNTEER, RECIPIENT
     val name: String = "", // Organization or Individual Name
     val address: String? = null
 )
