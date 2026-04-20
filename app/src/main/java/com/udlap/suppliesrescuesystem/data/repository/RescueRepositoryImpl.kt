@@ -5,6 +5,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
 import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
+import com.udlap.suppliesrescuesystem.domain.model.RecipientNeed
 import com.udlap.suppliesrescuesystem.domain.repository.RescueRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -112,7 +113,7 @@ class RescueRepositoryImpl @Inject constructor(
     override fun getBatchesForRecipient(recipientId: String): Flow<List<RescueBatch>> = callbackFlow {
         val listener = firestore.collection("rescue_batches")
             .whereEqualTo("recipientId", recipientId)
-            .whereIn("status", listOf("CLAIMED", "DELIVERED", "RECEIVED"))
+            .whereIn("status", listOf("AVAILABLE", "CLAIMED", "DELIVERED", "RECEIVED"))
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     handleFirestoreError(error)
@@ -138,6 +139,84 @@ class RescueRepositoryImpl @Inject constructor(
     override suspend fun deleteBatch(batchId: String): Result<Unit> {
         return try {
             firestore.collection("rescue_batches").document(batchId).delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun publishNeed(need: RecipientNeed): Result<Unit> {
+        return try {
+            firestore.collection("recipient_needs").document(need.id).set(need).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override fun getActiveNeeds(): Flow<List<RecipientNeed>> = callbackFlow {
+        val listener = firestore.collection("recipient_needs")
+            .whereEqualTo("fulfilled", false)
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    handleFirestoreError(error)
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val needs = snapshot?.toObjects(RecipientNeed::class.java) ?: emptyList()
+                trySend(needs)
+            }
+        awaitClose { listener.remove() }
+    }
+
+    override fun getNeedsByRecipient(recipientId: String): Flow<List<RecipientNeed>> = callbackFlow {
+        val listener = firestore.collection("recipient_needs")
+            .whereEqualTo("recipientId", recipientId)
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    handleFirestoreError(error)
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val needs = snapshot?.toObjects(RecipientNeed::class.java) ?: emptyList()
+                trySend(needs)
+            }
+        awaitClose { listener.remove() }
+    }
+
+    override suspend fun deleteNeed(needId: String): Result<Unit> {
+        return try {
+            firestore.collection("recipient_needs").document(needId).delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun claimOpenBatch(
+        batchId: String,
+        recipientId: String,
+        recipientName: String,
+        recipientAddress: String
+    ): Result<Unit> {
+        return try {
+            firestore.runTransaction { transaction ->
+                val ref = firestore.collection("rescue_batches").document(batchId)
+                val snapshot = transaction.get(ref)
+                val existingRecipientId = snapshot.getString("recipientId")
+                
+                if (existingRecipientId == null || existingRecipientId.isEmpty()) {
+                    transaction.update(ref, mapOf(
+                        "recipientId" to recipientId,
+                        "recipientName" to recipientName,
+                        "recipientAddress" to recipientAddress
+                    ))
+                } else {
+                    throw Exception("Este lote ya tiene un receptor asignado")
+                }
+            }.await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
