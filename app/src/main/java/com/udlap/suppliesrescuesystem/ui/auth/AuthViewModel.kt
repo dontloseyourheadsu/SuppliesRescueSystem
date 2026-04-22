@@ -104,11 +104,11 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun register(email: String, password: String, role: String, name: String, address: String) {
+    fun register(email: String, password: String, role: String, name: String, address: String, phone: String) {
         isLoggingOut = false
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val result = registerUseCase(email, password, role, name, address)
+            val result = registerUseCase(email, password, role, name, address, phone)
             result.onSuccess {
                 userDataStore.saveUser(it, rememberMe.value)
                 _authState.value = AuthState.Success(it)
@@ -118,10 +118,10 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun completeProfile(name: String, role: String, address: String) {
+    fun completeProfile(name: String, role: String, address: String, phone: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val result = completeProfileUseCase(name, role, address)
+            val result = completeProfileUseCase(name, role, address, phone)
             result.onSuccess {
                 userDataStore.saveUser(it, true)
                 _authState.value = AuthState.Success(it)
