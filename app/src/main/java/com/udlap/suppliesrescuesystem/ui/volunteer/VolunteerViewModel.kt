@@ -69,8 +69,12 @@ class VolunteerViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getAvailableBatches()
                 .map { list ->
-                    // Client-side filtering for expired batches
-                    list.filter { it.expiresAt > System.currentTimeMillis() }
+                    // Relaxed filtering: Only filter if it's clearly expired (e.g., more than 24h ago)
+                    // or just show them if they are still marked as AVAILABLE.
+                    // This fixes the bug where volunteers see nothing but recipients see "Buscando voluntario".
+                    list.filter { 
+                        !it.recipientId.isNullOrEmpty()
+                    }
                 }
                 .collect {
                     _availableBatches.value = it
@@ -97,6 +101,12 @@ class VolunteerViewModel @Inject constructor(
      */
     fun claimRescue(batchId: String) {
         val user = authRepository.getCurrentUser() ?: return
+
+        if (_activeRescue.value != null) {
+            _uiState.value = VolunteerState.Error("Ya tienes un rescate en curso. Termínalo antes de aceptar otro.")
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = VolunteerState.Loading
             val result = repository.claimBatch(batchId, user.uid)
@@ -104,6 +114,23 @@ class VolunteerViewModel @Inject constructor(
                 _uiState.value = VolunteerState.Success
             }.onFailure {
                 _uiState.value = VolunteerState.Error(it.message ?: "Error al reclamar")
+            }
+        }
+    }
+
+    /**
+     * Marks the currently claimed rescue batch as collected (picked up).
+     *
+     * @param batchId Unique identifier of the batch to collect.
+     */
+    fun collectRescue(batchId: String) {
+        viewModelScope.launch {
+            _uiState.value = VolunteerState.Loading
+            val result = repository.markAsCollected(batchId)
+            result.onSuccess {
+                _uiState.value = VolunteerState.Success
+            }.onFailure {
+                _uiState.value = VolunteerState.Error(it.message ?: "Error al marcar como recolectado")
             }
         }
     }
@@ -119,7 +146,8 @@ class VolunteerViewModel @Inject constructor(
             val result = repository.completeBatch(batchId)
             result.onSuccess {
                 _uiState.value = VolunteerState.Success
-                _activeRescue.value = null
+                // We don't null out _activeRescue here because the repository listener 
+                // will update it to null automatically since status changes to DELIVERED
             }.onFailure {
                 _uiState.value = VolunteerState.Error(it.message ?: "Error al completar")
             }

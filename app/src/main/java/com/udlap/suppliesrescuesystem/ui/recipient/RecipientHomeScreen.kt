@@ -71,12 +71,29 @@ fun RecipientHomeScreen(
             },
             floatingActionButton = {
                 if (selectedTab == 1) {
-                    FloatingActionButton(
-                        onClick = { showAddNeedDialog = true },
-                        containerColor = Color(0xFF4CAF50),
-                        contentColor = Color.White
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Need")
+                    val canAddNeed = myNeeds.size < 3
+                    Column(horizontalAlignment = Alignment.End) {
+                        if (!canAddNeed) {
+                            Card(
+                                modifier = Modifier.padding(bottom = 8.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))
+                            ) {
+                                Text(
+                                    "Máximo 3 necesidades activas.",
+                                    modifier = Modifier.padding(8.dp),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFE65100)
+                                )
+                            }
+                        }
+                        FloatingActionButton(
+                            onClick = { if (canAddNeed) showAddNeedDialog = true },
+                            containerColor = if (canAddNeed) Color(0xFF4CAF50) else Color.LightGray,
+                            contentColor = Color.White
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Need")
+                        }
                     }
                 }
             },
@@ -213,24 +230,36 @@ fun OpenBatchesList(batches: List<RescueBatch>, viewModel: RecipientViewModel, u
 @Composable
 fun AddNeedDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var description by remember { mutableStateOf("") }
+    val maxChars = 60
+    
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("What are you looking for?") },
+        title = { Text("¿Qué necesitas?") },
         text = {
-            TextField(
-                value = description,
-                onValueChange = { description = it },
-                placeholder = { Text("e.g. 5kg of rice, bread, etc.") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            Column {
+                TextField(
+                    value = description,
+                    onValueChange = { if (it.length <= maxChars) description = it },
+                    placeholder = { Text("ej. 5kg de arroz, pan, etc.") },
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = {
+                        Text(
+                            text = "${description.length} / $maxChars",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                            fontSize = 10.sp
+                        )
+                    }
+                )
+            }
         },
         confirmButton = {
             Button(onClick = { if (description.isNotBlank()) onConfirm(description) }) {
-                Text("Post Need")
+                Text("Publicar")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
         }
     )
 }
@@ -272,9 +301,11 @@ fun IncomingBatchItem(
                     Text("CONFIRMAR RECEPCIÓN", fontWeight = FontWeight.Bold)
                 }
             } else if (batch.status == "AVAILABLE") {
-                Text("Status: Waiting for volunteer", color = Color(0xFFE91E63), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("Status: Buscando voluntario", color = Color(0xFFE91E63), fontWeight = FontWeight.Bold, fontSize = 12.sp)
             } else if (batch.status == "CLAIMED") {
-                Text("Status: En camino", color = Color(0xFF2196F3), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("Status: Voluntario asignado", color = Color(0xFF2196F3), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            } else if (batch.status == "COLLECTED") {
+                Text("Status: En camino (Recolectado)", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
         }
     }

@@ -26,7 +26,7 @@ fun PublishBatchScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val currentUser by authViewModel.cachedUser.collectAsState()
-    val recipients by viewModel.recipients.collectAsState()
+    val recipients by viewModel.orderedRecipients.collectAsState()
     val publishState by viewModel.publishState.collectAsState()
     
     var title by remember { mutableStateOf("") }
@@ -35,7 +35,7 @@ fun PublishBatchScreen(
     
     // Recipient Info (null means "Open to all")
     var selectedRecipientId by remember { mutableStateOf<String?>(null) }
-    var selectedRecipientName by remember { mutableStateOf("OPEN TO ALL SHELTERS") }
+    var selectedRecipientName by remember { mutableStateOf("ABIERTO A TODOS LOS REFUGIOS") }
     var selectedRecipientAddress by remember { mutableStateOf("") }
     
     var expanded by remember { mutableStateOf(false) }
@@ -51,7 +51,7 @@ fun PublishBatchScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("PUBLISH RESCUE", fontWeight = FontWeight.Bold) },
+                title = { Text("PUBLICAR RESCATE", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -69,7 +69,7 @@ fun PublishBatchScreen(
                 .verticalScroll(scrollState)
         ) {
             // Donor Info (Read-only)
-            Text("DONOR INFO", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+            Text("INFORMACIÓN DEL DONANTE", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             Card(
                 modifier = Modifier.fillMaxWidth().border(1.dp, Color.Black, RoundedCornerShape(8.dp)),
@@ -77,16 +77,16 @@ fun PublishBatchScreen(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = "Organization: ${currentUser?.name ?: "Loading..."}", fontWeight = FontWeight.Medium)
+                    Text(text = "Organización: ${currentUser?.name ?: "Cargando..."}", fontWeight = FontWeight.Medium)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "Address: ${currentUser?.address ?: "N/A"}", fontSize = 14.sp)
+                    Text(text = "Dirección: ${currentUser?.address ?: "N/A"}", fontSize = 14.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Batch Details
-            Text("BATCH DETAILS", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+            Text("DETALLES DEL LOTE", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             Card(
                 modifier = Modifier.fillMaxWidth().border(1.dp, Color.Black, RoundedCornerShape(8.dp)),
@@ -96,8 +96,11 @@ fun PublishBatchScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     TextField(
                         value = title,
-                        onValueChange = { title = it },
-                        label = { Text("What are you rescuing? (e.g. 50 Tacos)") },
+                        onValueChange = { 
+                            title = it 
+                            viewModel.updateOrdering(it)
+                        },
+                        label = { Text("¿Qué vas a rescatar? (ej. 50 Tacos)") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
@@ -105,7 +108,7 @@ fun PublishBatchScreen(
                     TextField(
                         value = quantity,
                         onValueChange = { quantity = it },
-                        label = { Text("Quantity/Description") },
+                        label = { Text("Cantidad / Descripción") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
@@ -113,7 +116,7 @@ fun PublishBatchScreen(
                     TextField(
                         value = pickupWindow,
                         onValueChange = { pickupWindow = it },
-                        label = { Text("Pickup Window (e.g. 6 PM - 8 PM)") },
+                        label = { Text("Horario de recolección (ej. 6 PM - 8 PM)") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
@@ -123,7 +126,7 @@ fun PublishBatchScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Recipient Selection
-            Text("RECIPIENT (SHELTER)", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+            Text("RECEPTOR (REFUGIO)", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             
             ExposedDropdownMenuBox(
@@ -141,14 +144,15 @@ fun PublishBatchScreen(
                 )
                 ExposedDropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.heightIn(max = 300.dp)
                 ) {
                     // Option 1: Open to all
                     DropdownMenuItem(
-                        text = { Text("OPEN TO ALL SHELTERS", fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50)) },
+                        text = { Text("ABIERTO A TODOS LOS REFUGIOS", fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50)) },
                         onClick = {
                             selectedRecipientId = null
-                            selectedRecipientName = "OPEN TO ALL SHELTERS"
+                            selectedRecipientName = "ABIERTO A TODOS LOS REFUGIOS"
                             selectedRecipientAddress = ""
                             expanded = false
                         }
@@ -159,7 +163,7 @@ fun PublishBatchScreen(
                     // Option 2: Specific Recipients
                     if (recipients.isEmpty()) {
                         DropdownMenuItem(
-                            text = { Text("No shelters found", color = Color.Gray) },
+                            text = { Text("No se encontraron refugios", color = Color.Gray) },
                             onClick = { expanded = false },
                             enabled = false
                         )
@@ -167,9 +171,20 @@ fun PublishBatchScreen(
                         recipients.forEach { recipient ->
                             DropdownMenuItem(
                                 text = { 
-                                    Column {
+                                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
                                         Text(recipient.name, fontWeight = FontWeight.Bold)
-                                        Text(recipient.address ?: "No address", fontSize = 12.sp, color = Color.Gray)
+                                        if (recipient.needs.isNotEmpty()) {
+                                            Text(
+                                                text = "Necesita: " + recipient.needs.joinToString(", ") { 
+                                                    if (it.length > 25) it.take(22) + "..." else it 
+                                                },
+                                                fontSize = 12.sp,
+                                                color = Color(0xFF1976D2),
+                                                maxLines = 1
+                                            )
+                                        } else {
+                                            Text("Sin necesidades publicadas", fontSize = 11.sp, color = Color.Gray)
+                                        }
                                     }
                                 },
                                 onClick = {
@@ -186,7 +201,7 @@ fun PublishBatchScreen(
 
             if (selectedRecipientAddress.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = "Recipient Address: $selectedRecipientAddress", fontSize = 12.sp, color = Color.Gray)
+                Text(text = "Dirección de entrega: $selectedRecipientAddress", fontSize = 12.sp, color = Color.Gray)
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -207,7 +222,7 @@ fun PublishBatchScreen(
                         pickupWindow = pickupWindow,
                         donorName = currentUser?.name ?: "",
                         donorAddress = currentUser?.address ?: "",
-                        recipientId = selectedRecipientId ?: "", // Empty string if open
+                        recipientId = selectedRecipientId ?: "",
                         recipientName = selectedRecipientName,
                         recipientAddress = selectedRecipientAddress,
                         expiresAt = System.currentTimeMillis() + (4 * 60 * 60 * 1000)
@@ -224,7 +239,7 @@ fun PublishBatchScreen(
                 if (publishState is PublishState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("PUBLISH NOW", fontWeight = FontWeight.Bold)
+                    Text("PUBLICAR AHORA", fontWeight = FontWeight.Bold)
                 }
             }
         }

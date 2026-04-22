@@ -57,9 +57,9 @@ interface AuthRepository {
     fun getCurrentUser(): User?
 
     /**
-     * Fetches a list of all users with the RECIPIENT role.
+     * Fetches a list of all users with the RECIPIENT role, including their active needs.
      *
      * @return Result containing a list of User objects with the RECIPIENT role on success, or a failure exception.
      */
-    suspend fun getRecipients(): Result<List<User>>
+    suspend fun getRecipientsWithNeeds(): Result<List<User>>
 }

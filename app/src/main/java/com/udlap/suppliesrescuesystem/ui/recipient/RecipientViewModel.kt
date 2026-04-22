@@ -81,6 +81,17 @@ class RecipientViewModel @Inject constructor(
 
     fun publishNeed(description: String) {
         val user = authRepository.getCurrentUser() ?: return
+        
+        if (_myNeeds.value.size >= 3) {
+            _uiState.value = RecipientState.Error("Solo puedes publicar hasta 3 necesidades a la vez.")
+            return
+        }
+
+        if (description.length > 60) {
+            _uiState.value = RecipientState.Error("La necesidad es demasiado larga (máx 60 caracteres).")
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = RecipientState.Loading
             val need = RecipientNeed(

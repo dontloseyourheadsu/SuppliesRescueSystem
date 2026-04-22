@@ -144,19 +144,29 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Fetches all users from Firestore with the 'RECIPIENT' role.
-     *
-     * @return Result containing a list of recipient [User] objects on success, or a failure exception.
+     * Fetches all users from Firestore with the 'RECIPIENT' role and joins their needs.
      */
-    override suspend fun getRecipients(): Result<List<User>> {
+    override suspend fun getRecipientsWithNeeds(): Result<List<User>> {
         return try {
-            val snapshot = firestore.collection("users")
+            // 1. Fetch Recipients
+            val userSnapshot = firestore.collection("users")
                 .whereEqualTo("role", "RECIPIENT")
                 .get().await()
-            val recipients = snapshot.toObjects(User::class.java)
-            // Ensure we only return users with names and addresses
-            val validRecipients = recipients.filter { it.name.isNotBlank() && !it.address.isNullOrBlank() }
-            Result.success(validRecipients)
+            val recipients = userSnapshot.toObjects(User::class.java)
+
+            // 2. Fetch all active needs to join in memory (Spark plan efficient)
+            val needsSnapshot = firestore.collection("recipient_needs")
+                .get().await()
+            val allNeeds = needsSnapshot.toObjects(com.udlap.suppliesrescuesystem.domain.model.RecipientNeed::class.java)
+
+            val recipientsWithNeeds = recipients.map { recipient ->
+                val recipientNeeds = allNeeds
+                    .filter { it.recipientId == recipient.uid }
+                    .map { it.description }
+                recipient.copy(needs = recipientNeeds)
+            }
+
+            Result.success(recipientsWithNeeds.filter { it.name.isNotBlank() })
         } catch (e: Exception) {
             Result.failure(e)
         }
