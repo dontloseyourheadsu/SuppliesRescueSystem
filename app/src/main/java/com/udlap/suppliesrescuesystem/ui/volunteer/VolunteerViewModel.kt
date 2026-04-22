@@ -69,11 +69,10 @@ class VolunteerViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getAvailableBatches()
                 .map { list ->
-                    // Relaxed filtering: Only filter if it's clearly expired (e.g., more than 24h ago)
-                    // or just show them if they are still marked as AVAILABLE.
-                    // This fixes the bug where volunteers see nothing but recipients see "Buscando voluntario".
+                    val now = System.currentTimeMillis()
+                    // Filter: Must have a recipient AND not be expired
                     list.filter { 
-                        !it.recipientId.isNullOrEmpty()
+                        !it.recipientId.isNullOrEmpty() && it.expiresAt > now
                     }
                 }
                 .collect {
