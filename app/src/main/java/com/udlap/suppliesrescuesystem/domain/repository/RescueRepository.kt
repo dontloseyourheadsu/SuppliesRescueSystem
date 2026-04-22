@@ -43,6 +43,14 @@ interface RescueRepository {
     suspend fun claimBatch(batchId: String, volunteerId: String): Result<Unit>
 
     /**
+     * Marks a rescue batch as collected (picked up) by the volunteer.
+     *
+     * @param batchId Unique identifier of the rescue batch.
+     * @return Result indicating success or failure of the operation.
+     */
+    suspend fun markAsCollected(batchId: String): Result<Unit>
+
+    /**
      * Marks a rescue batch as delivered by the volunteer.
      *
      * @param batchId Unique identifier of the rescue batch.
