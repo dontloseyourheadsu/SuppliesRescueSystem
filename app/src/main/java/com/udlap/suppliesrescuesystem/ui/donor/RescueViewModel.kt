@@ -32,13 +32,6 @@ sealed class PublishState {
 
 /**
  * ViewModel responsible for managing donor-specific operations.
- *
- * This includes publishing new food rescue batches, viewing the donor's batch history,
- * loading potential recipients (shelters), and managing publication drafts.
- *
- * @property repository The [RescueRepository] for rescue batch operations.
- * @property authRepository The [AuthRepository] for user authentication and recipient lookups.
- * @property draftDataStore The [DraftDataStore] for managing publication drafts.
  */
 @HiltViewModel
 class RescueViewModel @Inject constructor(
@@ -56,8 +49,12 @@ class RescueViewModel @Inject constructor(
     val myBatches: StateFlow<List<RescueBatch>> = _myBatches.asStateFlow()
 
     private val _recipients = MutableStateFlow<List<com.udlap.suppliesrescuesystem.domain.model.User>>(emptyList())
-    /** Observable list of potential recipient organizations (shelters). */
+    /** Cached list of recipients with their needs. */
     val recipients: StateFlow<List<com.udlap.suppliesrescuesystem.domain.model.User>> = _recipients.asStateFlow()
+
+    private val _orderedRecipients = MutableStateFlow<List<com.udlap.suppliesrescuesystem.domain.model.User>>(emptyList())
+    /** Observable list of recipients ordered by relevance to the donation title. */
+    val orderedRecipients: StateFlow<List<com.udlap.suppliesrescuesystem.domain.model.User>> = _orderedRecipients.asStateFlow()
 
     private val _activeNeeds = MutableStateFlow<List<com.udlap.suppliesrescuesystem.domain.model.RecipientNeed>>(emptyList())
     /** Observable list of active needs from recipients. */
@@ -104,13 +101,42 @@ class RescueViewModel @Inject constructor(
     }
 
     /**
-     * Fetches the list of all users with the RECIPIENT role.
+     * Fetches the list of all users with the RECIPIENT role and their needs.
      */
     private fun loadRecipients() {
         viewModelScope.launch {
-            val result = authRepository.getRecipients()
-            result.onSuccess { _recipients.value = it }
+            val result = authRepository.getRecipientsWithNeeds()
+            result.onSuccess { 
+                _recipients.value = it
+                updateOrdering("") // Initial order
+            }
         }
+    }
+
+    /**
+     * Re-orders the recipient list based on the donation title.
+     */
+    fun updateOrdering(query: String) {
+        val list = _recipients.value
+        if (query.isBlank()) {
+            _orderedRecipients.value = list
+            return
+        }
+
+        val queryWords = query.lowercase().split(" ").filter { it.isNotBlank() }
+        
+        val scoredList = list.map { recipient ->
+            var score = 0
+            recipient.needs.forEach { need ->
+                val needLower = need.lowercase()
+                queryWords.forEach { word ->
+                    if (needLower.contains(word)) score++
+                }
+            }
+            recipient to score
+        }
+
+        _orderedRecipients.value = scoredList.sortedByDescending { it.second }.map { it.first }
     }
 
     /**

@@ -87,6 +87,11 @@ class RecipientViewModel @Inject constructor(
             return
         }
 
+        if (description.length > 60) {
+            _uiState.value = RecipientState.Error("La necesidad es demasiado larga (máx 60 caracteres).")
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = RecipientState.Loading
             val need = RecipientNeed(
