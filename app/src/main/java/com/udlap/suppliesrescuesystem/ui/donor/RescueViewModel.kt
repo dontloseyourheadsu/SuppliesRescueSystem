@@ -178,17 +178,23 @@ class RescueViewModel @Inject constructor(
         recipientAddress: String,
         expiresAt: Long
     ) {
-        val user = authRepository.getCurrentUser() ?: return
+        val currentUser = authRepository.getCurrentUser() ?: return
         
         viewModelScope.launch {
             _publishState.value = PublishState.Loading
+            
+            // Fetch full profile to get donorPhone
+            val userProfileResult = authRepository.getUserProfile(currentUser.uid)
+            val user = userProfileResult.getOrNull() ?: currentUser
+
             val batch = RescueBatch(
                 donorId = user.uid,
                 donorName = donorName,
                 donorAddress = donorAddress,
-                recipientId = recipientId,
-                recipientName = recipientName,
-                recipientAddress = recipientAddress,
+                donorPhone = user.phone,
+                recipientId = recipientId.takeIf { it.isNotBlank() },
+                recipientName = recipientName.takeIf { it.isNotBlank() },
+                recipientAddress = recipientAddress.takeIf { it.isNotBlank() },
                 title = title,
                 quantity = quantity,
                 pickupWindow = pickupWindow,
@@ -196,7 +202,7 @@ class RescueViewModel @Inject constructor(
             )
             val result = repository.publishBatch(batch)
             result.onSuccess {
-                draftDataStore.clearDraft() // Clear draft on success
+                clearDraft()
                 _publishState.value = PublishState.Success
             }.onFailure {
                 _publishState.value = PublishState.Error(it.message ?: "Error publishing")
