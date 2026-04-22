@@ -136,6 +136,7 @@ fun ActiveRescueCard(
     val labelText = if (isCollected) "EN CAMINO A ENTREGA" else "EN CAMINO A RECOLECTAR"
     val addressTitle = if (isCollected) "DESTINO:" else "ORIGEN:"
     val addressValue = if (isCollected) (batch.recipientAddress ?: "No address set") else batch.donorAddress
+    val phoneValue = if (isCollected) batch.recipientPhone else batch.donorPhone
     val actionText = if (isCollected) "CONFIRMAR ENTREGA" else "MARCAR COMO RECOLECTADO"
     val onAction = if (isCollected) onComplete else onCollect
 
@@ -151,14 +152,38 @@ fun ActiveRescueCard(
             
             Text(addressTitle, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             Text(addressValue, fontSize = 14.sp)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
-            Button(
-                onClick = { onOpenMap(addressValue) }, 
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                shape = RoundedCornerShape(4.dp)
-            ) {
-                Text("ABRIR EN GOOGLE MAPS", fontSize = 12.sp)
+            val context = LocalContext.current
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { onOpenMap(addressValue) }, 
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("MAPA", fontSize = 11.sp)
+                }
+
+                if (!phoneValue.isNullOrBlank()) {
+                    Button(
+                        onClick = { openWhatsApp(context, phoneValue) }, 
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                        shape = RoundedCornerShape(4.dp),
+                        modifier = Modifier.weight(1.1f)
+                    ) {
+                        Text("WHATSAPP", fontSize = 11.sp, color = Color.White)
+                    }
+
+                    Button(
+                        onClick = { openDialer(context, phoneValue) }, 
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                        shape = RoundedCornerShape(4.dp),
+                        modifier = Modifier.weight(0.9f)
+                    ) {
+                        Text("LLAMAR", fontSize = 11.sp)
+                    }
+                }
             }
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -218,4 +243,22 @@ private fun openMap(context: Context, address: String) {
     } else {
         context.startActivity(Intent(Intent.ACTION_VIEW, gmmIntentUri))
     }
+}
+
+private fun openWhatsApp(context: Context, phone: String) {
+    try {
+        val url = "https://api.whatsapp.com/send?phone=${phone.filter { it.isDigit() }}"
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.data = Uri.parse(url)
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        // Fallback to SMS if WhatsApp fails
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("sms:${phone}"))
+        context.startActivity(intent)
+    }
+}
+
+private fun openDialer(context: Context, phone: String) {
+    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${phone}"))
+    context.startActivity(intent)
 }

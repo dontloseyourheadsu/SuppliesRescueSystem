@@ -10,7 +10,7 @@ class CompleteProfileUseCase @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore
 ) {
-    suspend operator fun invoke(name: String, role: String, address: String): Result<User> {
+    suspend operator fun invoke(name: String, role: String, address: String, phone: String): Result<User> {
         return try {
             val firebaseUser = firebaseAuth.currentUser ?: throw Exception("No user logged in")
             val user = User(
@@ -18,7 +18,8 @@ class CompleteProfileUseCase @Inject constructor(
                 email = firebaseUser.email ?: "",
                 role = role,
                 name = name,
-                address = address
+                address = address,
+                phone = phone
             )
             firestore.collection("users").document(firebaseUser.uid).set(user).await()
             Result.success(user)

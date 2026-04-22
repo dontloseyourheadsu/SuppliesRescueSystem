@@ -113,5 +113,11 @@ interface RescueRepository {
     /**
      * Claims an "open" batch by a recipient.
      */
-    suspend fun claimOpenBatch(batchId: String, recipientId: String, recipientName: String, recipientAddress: String): Result<Unit>
+    suspend fun claimOpenBatch(
+        batchId: String,
+        recipientId: String,
+        recipientName: String,
+        recipientAddress: String,
+        recipientPhone: String
+    ): Result<Unit>
 }

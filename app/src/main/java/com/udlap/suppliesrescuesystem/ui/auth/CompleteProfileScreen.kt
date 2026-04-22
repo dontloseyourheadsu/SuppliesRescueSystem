@@ -20,6 +20,7 @@ fun CompleteProfileScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     var name by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var selectedRole by remember { mutableStateOf("VOLUNTEER") }
     var expanded by remember { mutableStateOf(false) }
@@ -60,6 +61,14 @@ fun CompleteProfileScreen(
                         value = name,
                         onValueChange = { name = it; error = null },
                         label = { Text("Organization or Full Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = phone,
+                        onValueChange = { phone = it; error = null },
+                        label = { Text("Phone / WhatsApp") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
@@ -113,10 +122,10 @@ fun CompleteProfileScreen(
 
             Button(
                 onClick = {
-                    if (name.isBlank() || address.isBlank()) {
+                    if (name.isBlank() || address.isBlank() || phone.isBlank()) {
                         error = "Please fill in all fields"
                     } else {
-                        viewModel.completeProfile(name, selectedRole, address)
+                        viewModel.completeProfile(name, selectedRole, address, phone)
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),

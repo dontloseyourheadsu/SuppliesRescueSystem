@@ -209,7 +209,8 @@ class RescueRepositoryImpl @Inject constructor(
         batchId: String,
         recipientId: String,
         recipientName: String,
-        recipientAddress: String
+        recipientAddress: String,
+        recipientPhone: String
     ): Result<Unit> {
         return try {
             firestore.runTransaction { transaction ->
@@ -228,12 +229,8 @@ class RescueRepositoryImpl @Inject constructor(
                     transaction.update(ref, mapOf(
                         "recipientId" to recipientId,
                         "recipientName" to recipientName,
-                        "recipientAddress" to recipientAddress
-                        // Note: We DON'T change status to CLAIMED yet, 
-                        // as a volunteer still needs to claim the transport.
-                        // Or should we? Business rule says: 
-                        // "evitar que dos voluntarios reclamen la misma recolección"
-                        // If a recipient claims it, it's still AVAILABLE for a volunteer.
+                        "recipientAddress" to recipientAddress,
+                        "recipientPhone" to recipientPhone
                     ))
                 } else {
                     throw Exception("Este lote ya tiene un receptor asignado")

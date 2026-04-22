@@ -70,8 +70,9 @@ class RecipientViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getAvailableBatches()
                 .map { list ->
-                    // Filter for batches with NO recipient assigned yet
-                    list.filter { it.recipientId.isNullOrEmpty() }
+                    val now = System.currentTimeMillis()
+                    // Filter: No recipient assigned yet AND not expired
+                    list.filter { it.recipientId.isNullOrEmpty() && it.expiresAt > now }
                 }
                 .collect {
                     _openBatches.value = it
@@ -128,7 +129,8 @@ class RecipientViewModel @Inject constructor(
                 batchId = batchId,
                 recipientId = user.uid,
                 recipientName = user.name,
-                recipientAddress = user.address ?: ""
+                recipientAddress = user.address ?: "",
+                recipientPhone = user.phone
             )
             result.onSuccess {
                 _uiState.value = RecipientState.Success

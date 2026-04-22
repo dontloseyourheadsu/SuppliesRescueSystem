@@ -31,12 +31,12 @@ class AuthRepositoryImpl @Inject constructor(
      * @param name User's organization or individual name.
      * @return Result containing the created [User] object on success, or a failure exception.
      */
-    override suspend fun register(email: String, password: String, role: String, name: String, address: String): Result<User> {
+    override suspend fun register(email: String, password: String, role: String, name: String, address: String, phone: String): Result<User> {
         return try {
             val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             val uid = result.user?.uid ?: throw Exception("UID is null")
             
-            val user = User(uid = uid, email = email, role = role, name = name, address = address)
+            val user = User(uid = uid, email = email, role = role, name = name, address = address, phone = phone)
             
             // Save user role in Firestore
             firestore.collection("users").document(uid).set(user).await()
@@ -140,7 +140,9 @@ class AuthRepositoryImpl @Inject constructor(
      */
     override fun getCurrentUser(): User? {
         val firebaseUser = firebaseAuth.currentUser ?: return null
-        return User(uid = firebaseUser.uid, email = firebaseUser.email ?: "", role = "", name = "")
+        // Note: This User object may be incomplete (role/name/phone missing).
+        // It's used as a quick session check.
+        return User(uid = firebaseUser.uid, email = firebaseUser.email ?: "")
     }
 
     /**

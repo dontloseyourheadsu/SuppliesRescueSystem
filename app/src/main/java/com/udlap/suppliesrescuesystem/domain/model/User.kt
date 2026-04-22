@@ -14,5 +14,6 @@ data class User(
     val role: String = "", // DONOR, VOLUNTEER, RECIPIENT
     val name: String = "", // Organization or Individual Name
     val address: String? = null,
+    val phone: String = "",
     val needs: List<String> = emptyList()
 )
