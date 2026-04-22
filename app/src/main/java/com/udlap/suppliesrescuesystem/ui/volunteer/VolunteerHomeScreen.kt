@@ -60,27 +60,47 @@ fun VolunteerHomeScreen(
                     .padding(padding)
                     .padding(16.dp)
             ) {
-                if (activeRescue != null) {
-                    ActiveRescueCard(
-                        batch = activeRescue!!,
-                        onComplete = { viewModel.completeRescue(activeRescue!!.id) },
-                        onOpenMap = { address -> openMap(context, address) },
-                        isLoading = uiState is VolunteerState.Loading
-                    )
-                } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    if (activeRescue != null) {
+                        item {
+                            ActiveRescueCard(
+                                batch = activeRescue!!,
+                                onCollect = { viewModel.collectRescue(activeRescue!!.id) },
+                                onComplete = { viewModel.completeRescue(activeRescue!!.id) },
+                                onOpenMap = { address -> openMap(context, address) },
+                                isLoading = uiState is VolunteerState.Loading
+                            )
+                        }
+                    }
+
+                    item {
+                        Text(
+                            text = "LOTES DISPONIBLES",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    }
+
                     if (availableBatches.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No hay rescates disponibles por ahora.", color = Color.Gray)
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("No hay más rescates disponibles.", color = Color.Gray)
+                            }
                         }
                     } else {
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(availableBatches) { batch ->
-                                AvailableRescueItem(
-                                    batch = batch,
-                                    onClaim = { viewModel.claimRescue(batch.id) },
-                                    isLoading = uiState is VolunteerState.Loading
-                                )
-                            }
+                        items(availableBatches) { batch ->
+                            AvailableRescueItem(
+                                batch = batch,
+                                onClaim = { viewModel.claimRescue(batch.id) },
+                                isLoading = uiState is VolunteerState.Loading
+                            )
                         }
                     }
                 }
@@ -105,36 +125,55 @@ fun VolunteerHomeScreen(
 @Composable
 fun ActiveRescueCard(
     batch: RescueBatch,
+    onCollect: () -> Unit,
     onComplete: () -> Unit,
     onOpenMap: (String) -> Unit,
     isLoading: Boolean
 ) {
+    val isCollected = batch.status == "COLLECTED"
+    val cardColor = if (isCollected) Color(0xFFE8F5E9) else Color(0xFFE3F2FD)
+    val accentColor = if (isCollected) Color(0xFF4CAF50) else Color(0xFF1976D2)
+    val labelText = if (isCollected) "EN CAMINO A ENTREGA" else "EN CAMINO A RECOLECTAR"
+    val addressTitle = if (isCollected) "DESTINO:" else "ORIGEN:"
+    val addressValue = if (isCollected) (batch.recipientAddress ?: "No address set") else batch.donorAddress
+    val actionText = if (isCollected) "CONFIRMAR ENTREGA" else "MARCAR COMO RECOLECTADO"
+    val onAction = if (isCollected) onComplete else onCollect
+
     Card(
-        modifier = Modifier.fillMaxWidth().border(2.dp, Color(0xFF1976D2), RoundedCornerShape(8.dp)),
+        modifier = Modifier.fillMaxWidth().border(2.dp, accentColor, RoundedCornerShape(8.dp)),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("ESTÁS EN RUTA", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = Color(0xFF1976D2))
+            Text(labelText, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = accentColor)
             Text(batch.title, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = Color.Black)
             Spacer(modifier = Modifier.height(16.dp))
-            Text("ORIGEN:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-            Text(batch.donorAddress, fontSize = 14.sp)
-            Button(onClick = { onOpenMap(batch.donorAddress) }, colors = ButtonDefaults.buttonColors(containerColor = Color.Black)) {
-                Text("VER MAPA")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(addressTitle, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(addressValue, fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            
             Button(
-                onClick = onComplete,
+                onClick = { onOpenMap(addressValue) }, 
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Text("ABRIR EN GOOGLE MAPS", fontSize = 12.sp)
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Button(
+                onClick = onAction,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                 enabled = !isLoading
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("COMPLETAR ENTREGA", fontWeight = FontWeight.Bold)
+                    Text(actionText, fontWeight = FontWeight.Bold)
                 }
             }
         }

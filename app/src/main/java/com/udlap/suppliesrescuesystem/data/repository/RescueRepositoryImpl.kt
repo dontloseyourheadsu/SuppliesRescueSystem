@@ -83,6 +83,16 @@ class RescueRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun markAsCollected(batchId: String): Result<Unit> {
+        return try {
+            firestore.collection("rescue_batches").document(batchId)
+                .update("status", "COLLECTED").await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun completeBatch(batchId: String): Result<Unit> {
         return try {
             firestore.collection("rescue_batches").document(batchId)
@@ -96,16 +106,16 @@ class RescueRepositoryImpl @Inject constructor(
     override fun getClaimedBatch(volunteerId: String): Flow<RescueBatch?> = callbackFlow {
         val listener = firestore.collection("rescue_batches")
             .whereEqualTo("volunteerId", volunteerId)
-            .whereEqualTo("status", "CLAIMED")
-            .limit(1)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     handleFirestoreError(error)
                     trySend(null)
                     return@addSnapshotListener
                 }
-                val batch = snapshot?.documents?.firstOrNull()?.toObject(RescueBatch::class.java)
-                trySend(batch)
+                // Filter in Kotlin to avoid requiring composite indexes for simple status checks
+                val batches = snapshot?.toObjects(RescueBatch::class.java) ?: emptyList()
+                val activeBatch = batches.firstOrNull { it.status == "CLAIMED" || it.status == "COLLECTED" }
+                trySend(activeBatch)
             }
         awaitClose { listener.remove() }
     }
@@ -113,7 +123,6 @@ class RescueRepositoryImpl @Inject constructor(
     override fun getBatchesForRecipient(recipientId: String): Flow<List<RescueBatch>> = callbackFlow {
         val listener = firestore.collection("rescue_batches")
             .whereEqualTo("recipientId", recipientId)
-            .whereIn("status", listOf("AVAILABLE", "CLAIMED", "DELIVERED", "RECEIVED"))
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     handleFirestoreError(error)
@@ -121,7 +130,9 @@ class RescueRepositoryImpl @Inject constructor(
                     return@addSnapshotListener
                 }
                 val batches = snapshot?.toObjects(RescueBatch::class.java) ?: emptyList()
-                trySend(batches)
+                // Filter and sort in Kotlin
+                val filtered = batches.filter { it.status in listOf("AVAILABLE", "CLAIMED", "COLLECTED", "DELIVERED", "RECEIVED") }
+                trySend(filtered.sortedByDescending { it.createdAt })
             }
         awaitClose { listener.remove() }
     }
