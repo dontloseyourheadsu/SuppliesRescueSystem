@@ -25,6 +25,7 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var role by remember { mutableStateOf("VOLUNTEER") }
     val authState by viewModel.authState.collectAsState()
@@ -73,6 +74,17 @@ fun RegisterScreen(
                         value = name,
                         onValueChange = { name = it },
                         label = { Text("Full Name / Org Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = { Text("Phone / WhatsApp") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent),
                         singleLine = true
@@ -146,13 +158,13 @@ fun RegisterScreen(
             }
 
             Button(
-                onClick = { viewModel.register(email, password, role, name, address) },
+                onClick = { viewModel.register(email, password, role, name, address, phone) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                enabled = authState !is AuthState.Loading && name.isNotBlank() && email.isNotBlank() && address.isNotBlank()
+                enabled = authState !is AuthState.Loading && name.isNotBlank() && email.isNotBlank() && address.isNotBlank() && phone.isNotBlank()
             ) {
                 if (authState is AuthState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
