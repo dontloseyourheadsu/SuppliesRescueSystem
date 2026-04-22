@@ -71,12 +71,29 @@ fun RecipientHomeScreen(
             },
             floatingActionButton = {
                 if (selectedTab == 1) {
-                    FloatingActionButton(
-                        onClick = { showAddNeedDialog = true },
-                        containerColor = Color(0xFF4CAF50),
-                        contentColor = Color.White
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Need")
+                    val canAddNeed = myNeeds.size < 3
+                    Column(horizontalAlignment = Alignment.End) {
+                        if (!canAddNeed) {
+                            Card(
+                                modifier = Modifier.padding(bottom = 8.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))
+                            ) {
+                                Text(
+                                    "Máximo 3 necesidades activas.",
+                                    modifier = Modifier.padding(8.dp),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFE65100)
+                                )
+                            }
+                        }
+                        FloatingActionButton(
+                            onClick = { if (canAddNeed) showAddNeedDialog = true },
+                            containerColor = if (canAddNeed) Color(0xFF4CAF50) else Color.LightGray,
+                            contentColor = Color.White
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Need")
+                        }
                     }
                 }
             },
@@ -272,9 +289,11 @@ fun IncomingBatchItem(
                     Text("CONFIRMAR RECEPCIÓN", fontWeight = FontWeight.Bold)
                 }
             } else if (batch.status == "AVAILABLE") {
-                Text("Status: Waiting for volunteer", color = Color(0xFFE91E63), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("Status: Buscando voluntario", color = Color(0xFFE91E63), fontWeight = FontWeight.Bold, fontSize = 12.sp)
             } else if (batch.status == "CLAIMED") {
-                Text("Status: En camino", color = Color(0xFF2196F3), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("Status: Voluntario asignado", color = Color(0xFF2196F3), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            } else if (batch.status == "COLLECTED") {
+                Text("Status: En camino (Recolectado)", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
         }
     }
