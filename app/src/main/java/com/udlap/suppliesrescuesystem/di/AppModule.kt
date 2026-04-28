@@ -16,30 +16,43 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/**
+ * Hilt module that provides singleton dependencies for the entire application.
+ *
+ * This includes Firebase instances, local data stores, and repository implementations.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    /** Provides the application [Context]. */
     @Provides
     @Singleton
     fun provideContext(@ApplicationContext context: Context): Context = context
 
+    /** Provides the singleton instance of [DraftDataStore]. */
     @Provides
     @Singleton
     fun provideDraftDataStore(@ApplicationContext context: Context): DraftDataStore = DraftDataStore(context)
 
+    /** Provides the singleton instance of [UserDataStore]. */
     @Provides
     @Singleton
     fun provideUserDataStore(@ApplicationContext context: Context): UserDataStore = UserDataStore(context)
 
+    /** Provides the singleton instance of [FirebaseAuth]. */
     @Provides
     @Singleton
     fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
 
+    /** Provides the singleton instance of [FirebaseFirestore]. */
     @Provides
     @Singleton
     fun provideFirebaseFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
 
+    /**
+     * Provides the [AuthRepository] implementation.
+     */
     @Provides
     @Singleton
     fun provideAuthRepository(
@@ -47,6 +60,9 @@ object AppModule {
         firestore: FirebaseFirestore
     ): AuthRepository = AuthRepositoryImpl(firebaseAuth, firestore)
 
+    /**
+     * Provides the [RescueRepository] implementation.
+     */
     @Provides
     @Singleton
     fun provideRescueRepository(

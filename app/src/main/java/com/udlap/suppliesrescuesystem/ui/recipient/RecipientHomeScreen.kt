@@ -26,6 +26,15 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Main screen for the Recipient role.
+ *
+ * Features a tabbed interface to view incoming batches, manage the recipient's own needs,
+ * and browse open batches from donors.
+ *
+ * @param onNavigateToProfile Callback to navigate to the user profile screen.
+ * @param viewModel The [RecipientViewModel] providing data and state for this screen.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipientHomeScreen(
@@ -148,6 +157,9 @@ fun RecipientHomeScreen(
     }
 }
 
+/**
+ * Displays the list of incoming food rescue batches assigned to this recipient.
+ */
 @Composable
 fun IncomingList(batches: List<RescueBatch>, viewModel: RecipientViewModel, uiState: RecipientState) {
     if (batches.isEmpty()) {
@@ -168,6 +180,9 @@ fun IncomingList(batches: List<RescueBatch>, viewModel: RecipientViewModel, uiSt
     }
 }
 
+/**
+ * Displays the list of active needs published by this recipient.
+ */
 @Composable
 fun NeedsList(needs: List<RecipientNeed>, viewModel: RecipientViewModel, uiState: RecipientState) {
     if (needs.isEmpty()) {
@@ -193,6 +208,9 @@ fun NeedsList(needs: List<RecipientNeed>, viewModel: RecipientViewModel, uiState
     }
 }
 
+/**
+ * Displays the list of open donor batches that haven't been assigned to a specific recipient yet.
+ */
 @Composable
 fun OpenBatchesList(batches: List<RescueBatch>, viewModel: RecipientViewModel, uiState: RecipientState) {
     if (batches.isEmpty()) {
@@ -227,6 +245,12 @@ fun OpenBatchesList(batches: List<RescueBatch>, viewModel: RecipientViewModel, u
     }
 }
 
+/**
+ * Dialog for adding a new food need.
+ *
+ * @param onDismiss Callback to dismiss the dialog.
+ * @param onConfirm Callback with the description of the new need.
+ */
 @Composable
 fun AddNeedDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var description by remember { mutableStateOf("") }
@@ -264,6 +288,16 @@ fun AddNeedDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     )
 }
 
+/**
+ * A card representing an incoming rescue batch in the recipient's list.
+ *
+ * Provides status information and an action to confirm reception once delivered.
+ *
+ * @param batch The [RescueBatch] data to display.
+ * @param onConfirm Callback to confirm that the batch has been received.
+ * @param onDelete Callback to remove the batch from the list.
+ * @param isLoading Whether an operation is currently in progress.
+ */
 @Composable
 fun IncomingBatchItem(
     batch: RescueBatch,

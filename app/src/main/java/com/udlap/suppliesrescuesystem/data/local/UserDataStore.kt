@@ -9,27 +9,44 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Local data storage manager for user session and preferences.
+ *
+ * Uses [SharedPreferences] to persist user profile data and session settings
+ * like "Remember Me".
+ *
+ * @property context The application context.
+ */
 @Singleton
 class UserDataStore @Inject constructor(private val context: Context) {
 
     private val prefs: SharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
 
     private val _cachedUserFlow = MutableStateFlow<User?>(null)
+    /** Observable flow of the currently cached user profile. */
     val cachedUser: StateFlow<User?> = _cachedUserFlow.asStateFlow()
 
     private val _rememberMeFlow = MutableStateFlow(false)
+    /** Observable flow of the "Remember Me" preference. */
     val rememberMe: StateFlow<Boolean> = _rememberMeFlow.asStateFlow()
 
     private val _savedEmailFlow = MutableStateFlow<String?>(null)
+    /** Observable flow of the saved email for auto-filling the login screen. */
     val savedEmail: StateFlow<String?> = _savedEmailFlow.asStateFlow()
 
     init {
-        // Synchronous initial load for instant UI
+        // Synchronous initial load for instant UI feedback during startup.
         _cachedUserFlow.value = getSyncUser()
         _rememberMeFlow.value = prefs.getBoolean("remember_me", false)
         _savedEmailFlow.value = prefs.getString("saved_email", null)
     }
 
+    /**
+     * Persists user profile data locally.
+     *
+     * @param user The [User] object to save.
+     * @param rememberMe Whether to save the email for future logins.
+     */
     fun saveUser(user: User, rememberMe: Boolean = true) {
         prefs.edit().apply {
             putString("user_uid", user.uid)
@@ -47,6 +64,9 @@ class UserDataStore @Inject constructor(private val context: Context) {
         if (rememberMe) _savedEmailFlow.value = user.email
     }
 
+    /**
+     * Updates the "Remember Me" preference.
+     */
     fun setRememberMe(enabled: Boolean) {
         prefs.edit().putBoolean("remember_me", enabled).apply()
         if (!enabled) {
@@ -56,6 +76,9 @@ class UserDataStore @Inject constructor(private val context: Context) {
         _rememberMeFlow.value = enabled
     }
 
+    /**
+     * Clears local user profile data but preserves preferences if "Remember Me" is enabled.
+     */
     fun clearUser() {
         val rememberMeVal = prefs.getBoolean("remember_me", false)
         val savedEmailVal = prefs.getString("saved_email", null)
@@ -75,6 +98,11 @@ class UserDataStore @Inject constructor(private val context: Context) {
         _savedEmailFlow.value = if (rememberMeVal) savedEmailVal else null
     }
 
+    /**
+     * Synchronously retrieves the cached user from preferences.
+     *
+     * @return The cached [User] or null if no user is found.
+     */
     fun getSyncUser(): User? {
         val uid = prefs.getString("user_uid", null) ?: return null
         return User(

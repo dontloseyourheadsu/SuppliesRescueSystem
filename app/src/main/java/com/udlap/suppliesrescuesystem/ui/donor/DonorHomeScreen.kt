@@ -21,6 +21,16 @@ import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
 import com.udlap.suppliesrescuesystem.ui.components.AppDrawer
 import kotlinx.coroutines.launch
 
+/**
+ * Main screen for the Donor role.
+ *
+ * Displays a list of rescue batches published by the current donor and provides
+ * a floating action button to publish new batches.
+ *
+ * @param onNavigateToPublish Callback to navigate to the batch publication screen.
+ * @param onNavigateToProfile Callback to navigate to the user profile screen.
+ * @param viewModel The [RescueViewModel] providing data and state for this screen.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DonorHomeScreen(
@@ -79,6 +89,11 @@ fun DonorHomeScreen(
     }
 }
 
+/**
+ * A card representing a single food rescue batch in the donor's list.
+ *
+ * @param batch The [RescueBatch] data to display.
+ */
 @Composable
 fun BatchItem(batch: RescueBatch) {
     Card(

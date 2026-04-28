@@ -16,6 +16,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 
+/**
+ * Screen for new users to create an account by providing their details and selecting a role.
+ *
+ * @param onRegisterSuccess Callback triggered when registration is successful, providing the user's role.
+ * @param onNavigateToLogin Callback to navigate back to the login screen.
+ * @param viewModel The [AuthViewModel] managing the registration process.
+ */
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: (String) -> Unit,

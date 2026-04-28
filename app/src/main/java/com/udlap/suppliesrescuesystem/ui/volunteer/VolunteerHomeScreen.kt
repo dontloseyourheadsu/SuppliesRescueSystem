@@ -24,6 +24,16 @@ import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
 import com.udlap.suppliesrescuesystem.ui.components.AppDrawer
 import kotlinx.coroutines.launch
 
+import com.udlap.suppliesrescuesystem.util.TimeUtils
+
+/**
+ * Main screen for the Volunteer role.
+ *
+ * Displays a list of available rescue batches and the current active rescue if one is claimed.
+ *
+ * @param onNavigateToProfile Callback to navigate to the user profile screen.
+ * @param viewModel The [VolunteerViewModel] providing data and state for this screen.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VolunteerHomeScreen(
@@ -122,6 +132,18 @@ fun VolunteerHomeScreen(
     }
 }
 
+/**
+ * A detailed card showing the current active rescue for the volunteer.
+ *
+ * Provides actions to open the map, contact the donor/recipient via WhatsApp or phone,
+ * and mark the rescue as collected or delivered.
+ *
+ * @param batch The [RescueBatch] currently being handled.
+ * @param onCollect Callback to mark the batch as collected from the donor.
+ * @param onComplete Callback to mark the batch as delivered to the recipient.
+ * @param onOpenMap Callback to open the navigation map for the given address.
+ * @param isLoading Whether an operation is currently in progress.
+ */
 @Composable
 fun ActiveRescueCard(
     batch: RescueBatch,
@@ -154,6 +176,10 @@ fun ActiveRescueCard(
             Text(addressValue, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(12.dp))
             
+            Text("HORARIO DE RECOLECCIÓN:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(batch.pickupWindow, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(12.dp))
+
             val context = LocalContext.current
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
@@ -188,12 +214,31 @@ fun ActiveRescueCard(
             
             Spacer(modifier = Modifier.height(24.dp))
             
+            val isWithinWindow = TimeUtils.isCurrentTimeInWindow(batch.pickupWindow)
+            val canAction = isCollected || isWithinWindow
+
+            if (!isCollected && !isWithinWindow) {
+                Surface(
+                    color = Color(0xFFFFEBEE),
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                ) {
+                    Text(
+                        text = "FUERA DE HORARIO: Solo puedes recolectar durante el horario establecido por el donante.",
+                        color = Color(0xFFC62828),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+            
             Button(
                 onClick = onAction,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                enabled = !isLoading
+                enabled = !isLoading && canAction
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
@@ -205,6 +250,13 @@ fun ActiveRescueCard(
     }
 }
 
+/**
+ * A card representing a rescue batch available to be claimed by volunteers.
+ *
+ * @param batch The available [RescueBatch].
+ * @param onClaim Callback to claim this rescue.
+ * @param isLoading Whether an operation is currently in progress.
+ */
 @Composable
 fun AvailableRescueItem(
     batch: RescueBatch,
@@ -220,6 +272,7 @@ fun AvailableRescueItem(
             Text(text = batch.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Text(text = "Origen: ${batch.donorName}", fontSize = 14.sp)
             Text(text = "Destino: ${batch.recipientName}", fontSize = 14.sp)
+            Text(text = "Horario: ${batch.pickupWindow}", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF1976D2))
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onClaim,

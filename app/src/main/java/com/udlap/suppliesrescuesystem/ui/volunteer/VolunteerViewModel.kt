@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
 import com.udlap.suppliesrescuesystem.domain.repository.AuthRepository
 import com.udlap.suppliesrescuesystem.domain.repository.RescueRepository
+import com.udlap.suppliesrescuesystem.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -123,6 +124,12 @@ class VolunteerViewModel @Inject constructor(
      * @param batchId Unique identifier of the batch to collect.
      */
     fun collectRescue(batchId: String) {
+        val batch = _activeRescue.value
+        if (batch != null && !TimeUtils.isCurrentTimeInWindow(batch.pickupWindow)) {
+            _uiState.value = VolunteerState.Error("No puedes recolectar fuera del horario establecido: ${batch.pickupWindow}")
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = VolunteerState.Loading
             val result = repository.markAsCollected(batchId)

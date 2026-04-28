@@ -6,10 +6,28 @@ import com.udlap.suppliesrescuesystem.domain.model.User
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
+/**
+ * Use case for completing a user's profile after initial registration or Google Sign-In.
+ *
+ * This use case is typically used when a user has a session but is missing mandatory
+ * details like their role, address, or phone number.
+ *
+ * @property firebaseAuth The [FirebaseAuth] instance to get the current user.
+ * @property firestore The [FirebaseFirestore] instance to save the profile.
+ */
 class CompleteProfileUseCase @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore
 ) {
+    /**
+     * Executes the profile completion process.
+     *
+     * @param name User's organization or full name.
+     * @param role User's selected role (DONOR, VOLUNTEER, RECIPIENT).
+     * @param address Physical address.
+     * @param phone Contact phone number.
+     * @return Result containing the updated [User] object on success.
+     */
     suspend operator fun invoke(name: String, role: String, address: String, phone: String): Result<User> {
         return try {
             val firebaseUser = firebaseAuth.currentUser ?: throw Exception("No user logged in")

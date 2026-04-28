@@ -25,6 +25,14 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.udlap.suppliesrescuesystem.R
 import kotlinx.coroutines.launch
 
+/**
+ * Screen for users to authenticate using email/password or Google Sign-In.
+ *
+ * @param onLoginSuccess Callback triggered when the user logs in successfully, providing their role.
+ * @param onNavigateToRegister Callback to navigate to the registration screen.
+ * @param onIncompleteProfile Callback triggered when the user logs in but hasn't finished setting up their profile.
+ * @param viewModel The [AuthViewModel] managing the authentication state.
+ */
 @Composable
 fun LoginScreen(
     onLoginSuccess: (String) -> Unit,
