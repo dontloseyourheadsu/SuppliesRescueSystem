@@ -41,6 +41,9 @@ fun PublishBatchScreen(
     var expanded by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
+    var startHour by remember { mutableIntStateOf(9) }
+    var endHour by remember { mutableIntStateOf(17) }
+
     LaunchedEffect(publishState) {
         if (publishState is PublishState.Success) {
             onNavigateBack()
@@ -112,14 +115,93 @@ fun PublishBatchScreen(
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
                     )
+                    
                     Spacer(modifier = Modifier.height(16.dp))
-                    TextField(
-                        value = pickupWindow,
-                        onValueChange = { pickupWindow = it },
-                        label = { Text("Horario de recolección (ej. 6 PM - 8 PM)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
-                    )
+                    
+                    Text("Horario de recolección", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 16.dp))
+                    
+                    var startExpanded by remember { mutableStateOf(false) }
+                    var endExpanded by remember { mutableStateOf(false) }
+                    
+                    // Update pickupWindow string whenever start/end hour changes
+                    LaunchedEffect(startHour, endHour) {
+                        pickupWindow = "${com.udlap.suppliesrescuesystem.util.TimeUtils.formatTo12h(startHour)}-${com.udlap.suppliesrescuesystem.util.TimeUtils.formatTo12h(endHour)}"
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ExposedDropdownMenuBox(
+                            expanded = startExpanded,
+                            onExpandedChange = { startExpanded = !startExpanded },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            TextField(
+                                value = com.udlap.suppliesrescuesystem.util.TimeUtils.formatTo12h(startHour),
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Desde") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = startExpanded) },
+                                modifier = Modifier.menuAnchor(),
+                                colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
+                            )
+                            ExposedDropdownMenu(
+                                expanded = startExpanded,
+                                onDismissRequest = { startExpanded = false }
+                            ) {
+                                (0..23).forEach { hour ->
+                                    DropdownMenuItem(
+                                        text = { Text(com.udlap.suppliesrescuesystem.util.TimeUtils.formatTo12h(hour)) },
+                                        onClick = {
+                                            startHour = hour
+                                            startExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        ExposedDropdownMenuBox(
+                            expanded = endExpanded,
+                            onExpandedChange = { endExpanded = !endExpanded },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            TextField(
+                                value = com.udlap.suppliesrescuesystem.util.TimeUtils.formatTo12h(endHour),
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Hasta") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = endExpanded) },
+                                modifier = Modifier.menuAnchor(),
+                                colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
+                            )
+                            ExposedDropdownMenu(
+                                expanded = endExpanded,
+                                onDismissRequest = { endExpanded = false }
+                            ) {
+                                (0..23).forEach { hour ->
+                                    DropdownMenuItem(
+                                        text = { Text(com.udlap.suppliesrescuesystem.util.TimeUtils.formatTo12h(hour)) },
+                                        onClick = {
+                                            endHour = hour
+                                            endExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    val isRangeValid = startHour < endHour
+                    if (!isRangeValid) {
+                        Text(
+                            text = "La hora de inicio debe ser menor a la hora de fin.",
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                        )
+                    }
                 }
             }
 
@@ -219,7 +301,7 @@ fun PublishBatchScreen(
                     viewModel.publishBatchExtended(
                         title = title,
                         quantity = quantity,
-                        pickupWindow = pickupWindow,
+                        pickupWindow = pickupWindow.replace(" ", ""),
                         donorName = currentUser?.name ?: "",
                         donorAddress = currentUser?.address ?: "",
                         recipientId = selectedRecipientId ?: "",
@@ -234,7 +316,8 @@ fun PublishBatchScreen(
                 enabled = publishState !is PublishState.Loading && 
                         title.isNotBlank() && 
                         quantity.isNotBlank() && 
-                        pickupWindow.isNotBlank()
+                        pickupWindow.isNotBlank() &&
+                        startHour < endHour
             ) {
                 if (publishState is PublishState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
