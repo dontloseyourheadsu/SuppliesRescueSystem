@@ -1,70 +1,90 @@
-# SuppliesRescueSystem - Food Rescue MVP
+# Supplies Rescue System
 
-Plataforma logística en tiempo real para reducir el desperdicio de alimentos conectando donantes con voluntarios y refugios.
+## Project Overview
+The Supplies Rescue System is a real-time logistics platform designed to optimize food rescue operations. It facilitates the coordination between food donors (restaurants, supermarkets), volunteers (drivers), and recipients (shelters, NGOs) to ensure surplus food is rescued and delivered efficiently before expiration.
 
-## 🚀 El Problema y la Solución
-**El Problema:** Grandes cantidades de comida en perfecto estado se desperdician diariamente en restaurantes y comercios al final de su jornada, mientras organizaciones sociales sufren carencias.
-**La Solución:** Una aplicación móvil que permite publicar excedentes de comida rápidamente, asignarlos a voluntarios para su transporte y confirmar su recepción en refugios.
+## Core Architecture
+The system is built following Clean Architecture principles and the MVVM (Model-View-ViewModel) pattern to ensure separation of concerns and maintainability.
+
+```mermaid
+graph TD
+    subgraph UI_Layer
+        A[Compose Screens] --> B[ViewModels]
+    end
+    subgraph Domain_Layer
+        B --> C[Use Cases]
+        C --> D[Entities]
+        C --> E[Repository Interfaces]
+    end
+    subgraph Data_Layer
+        F[Repository Implementation] -- Implements --> E
+        F --> G[Firestore Remote]
+        F --> H[DataStore Local]
+    end
+```
+
+## Technical Implementation Details
+
+### Rescue Lifecycle and State Management
+A rescue batch follows a strict linear state machine to ensure logistical tracking.
+
+```mermaid
+stateDiagram-v2
+    [*] --> AVAILABLE : Donor Publishes
+    AVAILABLE --> CLAIMED : Volunteer Claims (Transaction)
+    CLAIMED --> COLLECTED : Volunteer Picks Up
+    COLLECTED --> DELIVERED : Volunteer Arrives
+    DELIVERED --> RECEIVED : Recipient Confirms
+    RECEIVED --> [*]
+```
+
+### Concurrency and Data Integrity
+To prevent race conditions where multiple volunteers might attempt to claim the same rescue batch simultaneously, the system implements atomic Firestore transactions.
+
+```mermaid
+sequenceDiagram
+    participant V as Volunteer App
+    participant F as Firestore Transaction
+    participant D as Database
+
+    V->>F: Request claimBatch(id)
+    F->>D: Read Document Status
+    D-->>F: status: "AVAILABLE"
+    Note over F: Atomic Check
+    alt status is AVAILABLE
+        F->>D: Write status: "CLAIMED", volunteerId: UID
+        D-->>V: Success (Result.success)
+    else status is not AVAILABLE
+        F-->>V: Error: "Already Claimed" (Result.failure)
+    end
+```
+
+### Real-Time Synchronization
+The application leverages Firestore's snapshot listeners exposed through Kotlin callbackFlows. This provides a reactive stream of updates to all participants, ensuring that status changes (e.g., from AVAILABLE to CLAIMED) are reflected instantly across the network without manual polling.
+
+### Zero-Media Policy and Optimization
+The system is strictly text-based. It does not support image uploads or multimedia processing. This design decision ensures high performance and low data consumption, which is critical for logistics operations in areas with limited network connectivity. All rescue batch descriptions, quantities, and instructions are handled through structured text fields.
+
+### Native Integrations
+Logistics are handled via native Android Intents. The application interfaces with external mapping services (e.g., Google Maps) for navigation and communication platforms (e.g., WhatsApp, Phone Dialer) for coordination. This reduces the application's footprint by avoiding heavy third-party SDK integrations.
+
+### Time-Window Validation
+Rescue batches include specific pickup windows. The system includes a utility module to parse and validate these time ranges against the device's local time, enabling or disabling workflow actions based on donor-defined constraints.
+
+## Technical Stack
+- Language: Kotlin
+- UI Framework: Jetpack Compose
+- Dependency Injection: Hilt
+- Backend: Firebase (Authentication and Cloud Firestore)
+- Reactive Programming: Coroutines and StateFlow
+- Local Persistence: Jetpack DataStore and SharedPreferences
+
+## Setup Requirements
+1. Clone the repository.
+2. Place a valid google-services.json file in the app/ directory.
+3. Enable Email/Password authentication in the Firebase Console.
+4. Deploy the security rules provided in the firestore.rules file to the project's Firestore instance.
+5. Synchronize Gradle and build the project using Android Studio.
 
 ---
-
-## 📸 Demo de la Aplicación
-*Guarda tus capturas en la carpeta `readme-images/` para visualizarlas aquí.*
-
-### 1. Acceso y Registro
-| Login | Registro de Roles |
-| :---: | :---: |
-| ![Login Screen](readme-images/login.png) | ![Register Screen](readme-images/register.png) |
-| *Diseño Bento Box de alto contraste para acceso rápido.* | *Selección obligatoria de rol (Donante, Voluntario, Receptor).* |
-
-### 2. Flujo del Donante (Restaurantes)
-| Panel de Estado | Publicar Lote |
-| :---: | :---: |
-| ![Donor Home](readme-images/donor_home.png) | ![Publish Screen](readme-images/publish.png) |
-| *Seguimiento en tiempo real de lotes: Pendiente, Asignado o Completado.* | *Formulario de texto optimizado para publicaciones en menos de 30 segundos.* |
-
-### 3. Flujo del Voluntario (Repartidores)
-| Feed de Rescates | Ruta Activa |
-| :---: | :---: |
-| ![Volunteer Feed](readme-images/volunteer_feed.png) | ![Active Route](readme-images/active_route.png) |
-| *Lista filtrada por tiempo de expiración para evitar comida caducada.* | *Integración con Google Maps para navegación rápida al donante y refugio.* |
-
-### 4. Flujo del Receptor (Refugios/ONG)
-| Entregas Entrantes | Confirmación |
-| :---: | :---: |
-| ![Recipient Home](readme-images/recipient_home.png) | ![Confirmation](readme-images/confirmation.png) |
-| *Vista de qué voluntarios están en camino hacia su ubicación.* | *Botón de confirmación final para cerrar el ciclo de rescate.* |
-
----
-
-## 🛠️ Stack Tecnológico
-- **Lenguaje:** Kotlin 2.1
-- **UI:** Jetpack Compose (Modern Utility Design)
-- **Arquitectura:** Clean Architecture + MVVM
-- **DI:** Hilt (Dagger)
-- **Backend:** Firebase Auth & Firestore (Spark Plan friendly)
-- **Navegación:** Compose Navigation
-- **Asincronía:** Kotlin Coroutines & StateFlow
-
----
-
-## ⚙️ Configuración del Proyecto
-Para ejecutar este proyecto localmente:
-
-1.  **Clonar el repositorio.**
-2.  **Firebase Setup:**
-    - Crea un proyecto en [Firebase Console](https://console.firebase.google.com/).
-    - Añade una app de Android con el paquete `com.udlap.suppliesrescuesystem`.
-    - Descarga el archivo `google-services.json` y colócalo en la carpeta `app/`.
-3.  **Habilitar Servicios:**
-    - **Auth:** Activar Email/Password.
-    - **Firestore:** Crear base de datos en modo prueba o con las reglas proporcionadas en la documentación técnica.
-4.  **Build:** Sincroniza Gradle y ejecuta la app en un emulador o dispositivo físico.
-
----
-
-## 🛡️ Seguridad (Reglas de Firestore)
-El sistema utiliza transacciones para evitar colisiones entre voluntarios y reglas de validación por UID para proteger los datos de perfil.
-
----
-*Desarrollado para el impacto social y la eficiencia logística.*
+This software is designed for logistical efficiency and social impact through optimized resource management.
