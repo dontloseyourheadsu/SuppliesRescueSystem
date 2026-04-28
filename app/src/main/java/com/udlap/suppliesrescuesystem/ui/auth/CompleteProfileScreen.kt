@@ -13,6 +13,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 
+/**
+ * Screen for users who have an account (e.g., from Google Sign-In) but haven't
+ * filled in their profile details (name, role, address, phone).
+ *
+ * @param onCompleteSuccess Callback triggered when the profile is successfully updated.
+ * @param viewModel The [AuthViewModel] managing the profile completion.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompleteProfileScreen(

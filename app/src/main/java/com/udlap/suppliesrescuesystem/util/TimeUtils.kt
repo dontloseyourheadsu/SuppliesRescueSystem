@@ -2,8 +2,17 @@ package com.udlap.suppliesrescuesystem.util
 
 import java.util.Calendar
 
+/**
+ * Utility functions for handling time and time windows in the application.
+ */
 object TimeUtils {
 
+    /**
+     * Formats a 24-hour integer hour to a 12-hour string (e.g., 13 -> "1PM").
+     *
+     * @param hour The hour in 24-hour format (0-23).
+     * @return A string representation in 12-hour format.
+     */
     fun formatTo12h(hour: Int): String {
         return when {
             hour == 0 -> "12AM"
@@ -13,6 +22,12 @@ object TimeUtils {
         }
     }
 
+    /**
+     * Checks if the current system time falls within a given time window string.
+     *
+     * @param window A string representing a time range (e.g., "9AM-5PM").
+     * @return True if the current time is within the window, false otherwise.
+     */
     fun isCurrentTimeInWindow(window: String): Boolean {
         if (window.isBlank()) return true
         
@@ -42,6 +57,12 @@ object TimeUtils {
         }
     }
 
+    /**
+     * Parses a 12-hour string (e.g., "1PM") into a 24-hour integer.
+     *
+     * @param hourStr The 12-hour time string.
+     * @return The hour in 24-hour format (0-23), or -1 if parsing fails.
+     */
     private fun parseHour(hourStr: String): Int {
         return try {
             val isPM = hourStr.contains("PM")

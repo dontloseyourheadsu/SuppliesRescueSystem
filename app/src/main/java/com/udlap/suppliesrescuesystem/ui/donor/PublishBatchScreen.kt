@@ -18,6 +18,16 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.udlap.suppliesrescuesystem.ui.auth.AuthViewModel
 
+/**
+ * Screen for donors to publish a new food rescue batch.
+ *
+ * Allows donors to enter details about the donation (title, quantity), set a pickup window
+ * using dropdown time pickers, and optionally select a specific recipient shelter.
+ *
+ * @param onNavigateBack Callback to navigate back to the previous screen.
+ * @param viewModel The [RescueViewModel] for publishing the batch and managing drafts.
+ * @param authViewModel The [AuthViewModel] to retrieve the current user's donor information.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublishBatchScreen(

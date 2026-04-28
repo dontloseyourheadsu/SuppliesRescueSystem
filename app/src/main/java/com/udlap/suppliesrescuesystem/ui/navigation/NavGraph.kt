@@ -44,6 +44,13 @@ sealed class Screen(val route: String) {
     }
 }
 
+/**
+ * Main navigation controller for the application.
+ *
+ * Sets up the [NavHost] and defines all available destinations (Login, Register, Home screens for different roles, etc.).
+ *
+ * @param navController The [NavHostController] managing the navigation stack.
+ */
 @Composable
 fun NavGraph(navController: NavHostController) {
     val authViewModel: AuthViewModel = hiltViewModel()
@@ -162,6 +169,14 @@ fun NavGraph(navController: NavHostController) {
     }
 }
 
+/**
+ * Initial screen shown while checking the user's authentication state.
+ *
+ * @param viewModel The [AuthViewModel] used to check session status.
+ * @param onAuthenticated Callback triggered when a user is already logged in, providing their role.
+ * @param onNotAuthenticated Callback triggered when no active session is found.
+ * @param onIncompleteProfile Callback triggered when a session exists but the user's profile is incomplete.
+ */
 @Composable
 fun SplashScreen(
     viewModel: AuthViewModel,
@@ -185,6 +200,9 @@ fun SplashScreen(
     }
 }
 
+/**
+ * Navigates to the appropriate home screen based on the user's role.
+ */
 private fun navigateByRole(navController: NavHostController, role: String) {
     val destination = when (role) {
         "DONOR" -> Screen.DonorHome.route

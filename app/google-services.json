@@ -1,0 +1,113 @@
+{
+  "project_info": {
+    "project_number": "387194183019",
+    "project_id": "udlap-6287c",
+    "storage_bucket": "udlap-6287c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387194183019:android:d0a6824fb3f9b2ddf8002e",
+        "android_client_info": {
+          "package_name": "com.jesus.fire"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "387194183019-p3f9qe0480nmhkcej1gf5irq6lra26qe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jesus.fire",
+            "certificate_hash": "d976b018176849aa41d308a66487bea7b64626e6"
+          }
+        },
+        {
+          "client_id": "387194183019-ta3pl4ne0tpmedof2net9vc4p7vptuad.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBz4E423CXCn6vId4m-aElT2W9TJ18jUjg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "387194183019-ta3pl4ne0tpmedof2net9vc4p7vptuad.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387194183019:android:c60915dd798358fcf8002e",
+        "android_client_info": {
+          "package_name": "com.udlap.controlacademico"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "387194183019-ta3pl4ne0tpmedof2net9vc4p7vptuad.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBz4E423CXCn6vId4m-aElT2W9TJ18jUjg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "387194183019-ta3pl4ne0tpmedof2net9vc4p7vptuad.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387194183019:android:ac7b42f39a56bd76f8002e",
+        "android_client_info": {
+          "package_name": "com.udlap.suppliesrescuesystem"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "387194183019-ha7ep0ethdbmhgf6gal74a3rfu3fafl1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.udlap.suppliesrescuesystem",
+            "certificate_hash": "d976b018176849aa41d308a66487bea7b64626e6"
+          }
+        },
+        {
+          "client_id": "387194183019-ta3pl4ne0tpmedof2net9vc4p7vptuad.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBz4E423CXCn6vId4m-aElT2W9TJ18jUjg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "387194183019-ta3pl4ne0tpmedof2net9vc4p7vptuad.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

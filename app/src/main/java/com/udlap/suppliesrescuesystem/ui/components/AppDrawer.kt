@@ -15,6 +15,16 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+/**
+ * A standard navigation drawer for the application.
+ *
+ * Provides links to the main home screen and the user's profile.
+ *
+ * @param currentRoute The route of the screen currently being displayed.
+ * @param onNavigateToHome Callback to navigate to the home screen.
+ * @param onNavigateToProfile Callback to navigate to the profile screen.
+ * @param content The main content of the screen, which can control the drawer state.
+ */
 @Composable
 fun AppDrawer(
     currentRoute: String,

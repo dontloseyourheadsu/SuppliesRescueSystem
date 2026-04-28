@@ -17,6 +17,13 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.udlap.suppliesrescuesystem.ui.auth.AuthViewModel
 
+/**
+ * Screen displaying the current user's profile information.
+ *
+ * @param onNavigateBack Callback to navigate back to the previous screen.
+ * @param onLogout Callback triggered when the user logs out.
+ * @param viewModel The [AuthViewModel] providing user profile data.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -84,6 +91,13 @@ fun ProfileScreen(
     }
 }
 
+/**
+ * A reusable row to display a labeled profile information field.
+ *
+ * @param icon The icon to display next to the information.
+ * @param label The label for the information field.
+ * @param value The value of the information field.
+ */
 @Composable
 fun ProfileInfoRow(icon: ImageVector, label: String, value: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
