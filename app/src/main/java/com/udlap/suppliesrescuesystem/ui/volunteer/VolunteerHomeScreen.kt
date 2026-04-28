@@ -24,6 +24,8 @@ import com.udlap.suppliesrescuesystem.domain.model.RescueBatch
 import com.udlap.suppliesrescuesystem.ui.components.AppDrawer
 import kotlinx.coroutines.launch
 
+import com.udlap.suppliesrescuesystem.util.TimeUtils
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VolunteerHomeScreen(
@@ -154,6 +156,10 @@ fun ActiveRescueCard(
             Text(addressValue, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(12.dp))
             
+            Text("HORARIO DE RECOLECCIÓN:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(batch.pickupWindow, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(12.dp))
+
             val context = LocalContext.current
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
@@ -188,12 +194,31 @@ fun ActiveRescueCard(
             
             Spacer(modifier = Modifier.height(24.dp))
             
+            val isWithinWindow = TimeUtils.isCurrentTimeInWindow(batch.pickupWindow)
+            val canAction = isCollected || isWithinWindow
+
+            if (!isCollected && !isWithinWindow) {
+                Surface(
+                    color = Color(0xFFFFEBEE),
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                ) {
+                    Text(
+                        text = "FUERA DE HORARIO: Solo puedes recolectar durante el horario establecido por el donante.",
+                        color = Color(0xFFC62828),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+            
             Button(
                 onClick = onAction,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                enabled = !isLoading
+                enabled = !isLoading && canAction
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
@@ -220,6 +245,7 @@ fun AvailableRescueItem(
             Text(text = batch.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Text(text = "Origen: ${batch.donorName}", fontSize = 14.sp)
             Text(text = "Destino: ${batch.recipientName}", fontSize = 14.sp)
+            Text(text = "Horario: ${batch.pickupWindow}", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF1976D2))
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onClaim,
